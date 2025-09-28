@@ -9,11 +9,15 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
+import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.texture.Texture2D;
 import com.jme3.ui.Picture;
 import com.turboio.games.vampires.controls.PlayerControl;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class GameAppState extends BaseAppState implements ActionListener {
     private Picture background;
@@ -32,10 +36,22 @@ public class GameAppState extends BaseAppState implements ActionListener {
 
         player = getSpatial("player");
         player.setUserData("alive", true);
-        player.move((float) app.getCamera().getWidth() / 2, (float) app.getCamera().getHeight() / 2, 0);
 
-        // add control to the player
-        player.addControl(new PlayerControl(app.getCamera().getWidth(), app.getCamera().getHeight()));
+        // Define the initial perimeter
+        List<Vector3f> perimeter = new ArrayList<>();
+        float inset = 64f;
+        float screenWidth = app.getCamera().getWidth();
+        float screenHeight = app.getCamera().getHeight();
+        perimeter.add(new Vector3f(inset, inset, 0)); // Bottom-left
+        perimeter.add(new Vector3f(screenWidth - inset, inset, 0)); // Bottom-right
+        perimeter.add(new Vector3f(screenWidth - inset, screenHeight - inset, 0)); // Top-right
+        perimeter.add(new Vector3f(inset, screenHeight - inset, 0)); // Top-left
+
+        // Set player's initial position to the start of the perimeter
+        player.setLocalTranslation(perimeter.get(0));
+
+        // add control to the player, passing the perimeter data
+        player.addControl(new PlayerControl(perimeter));
     }
 
     @Override
