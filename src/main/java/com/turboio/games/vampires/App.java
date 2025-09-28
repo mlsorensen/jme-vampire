@@ -27,6 +27,7 @@ public class App extends SimpleApplication {
         cam.setParallelProjection(true);
         cam.setLocation(new Vector3f(0, 0, 0.5f));
         getFlyByCamera().setEnabled(false);
+
         // We start the game by attaching the start screen app state
         stateManager.attach(new StartScreenAppState());
     }

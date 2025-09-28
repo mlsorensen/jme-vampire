@@ -26,7 +26,7 @@ public class PlayerControl extends AbstractControl {
     protected void controlUpdate(float tpf) {
         // move the player in a certain direction if they are not out of the screen
         if (up) {
-            if (spatial.getLocalTranslation().y < screenHeight - (Float)spatial.getUserData("radius") - 200) {
+            if (spatial.getLocalTranslation().y < screenHeight - (Float)spatial.getUserData("radius")) {
                 spatial.move(0,tpf*speed,0);
             }
         } else if (down) {
