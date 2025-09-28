@@ -10,40 +10,45 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
-import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
-import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
-import com.jme3.scene.VertexBuffer;
-import com.jme3.scene.shape.Quad;
 import com.jme3.texture.Image;
-import com.jme3.texture.Texture;
 import com.jme3.texture.Texture2D;
 import com.jme3.ui.Picture;
-import com.jme3.util.BufferUtils;
 import com.turboio.games.vampires.controls.PlayerControl;
+import com.turboio.games.vampires.perimeter.Perimeter;
+import com.turboio.games.vampires.perimeter.PerimeterManager;
+import com.turboio.games.vampires.perimeter.PerimeterRenderer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class GameAppState extends BaseAppState implements ActionListener {
     private SimpleApplication app;
     private Picture background;
     private Spatial player;
-    private Geometry perimeterGeom;
+    private Spatial enemy;
+    private Node perimeterGeoms;
     private Node shadingOverlay;
-    private List<Vector3f> perimeter;
+    private Geometry drawingPathGeom;
     private FilterPostProcessor fpp;
+
+    private List<Perimeter> perimeters;
+    private PerimeterManager perimeterManager;
+    private PerimeterRenderer perimeterRenderer;
 
     private final String[] MAPPINGS = new String[]{"left", "right", "up", "down", "return"};
 
     @Override
     protected void initialize(Application app) {
         this.app = (SimpleApplication) app;
+        this.perimeterManager = new PerimeterManager();
+        this.perimeterRenderer = new PerimeterRenderer(app.getAssetManager());
 
         // Layer 0: Background
         background = new Picture("Background");
@@ -53,103 +58,49 @@ public class GameAppState extends BaseAppState implements ActionListener {
         background.setLocalTranslation(0, 0, 0);
 
         // --- Data Setup ---
-        perimeter = new ArrayList<>();
+        List<Vector3f> initialVertices = new ArrayList<>();
         float inset = 64f;
         float screenWidth = app.getCamera().getWidth();
         float screenHeight = app.getCamera().getHeight();
-        perimeter.add(new Vector3f(inset, inset, 0)); // Bottom-left
-        perimeter.add(new Vector3f(screenWidth - inset, inset, 0)); // Bottom-right
-        perimeter.add(new Vector3f(screenWidth - inset, screenHeight - inset, 0)); // Top-right
-        perimeter.add(new Vector3f(inset, screenHeight - inset, 0)); // Top-left
+        initialVertices.add(new Vector3f(inset, inset, 0));
+        initialVertices.add(new Vector3f(screenWidth - inset, inset, 0));
+        initialVertices.add(new Vector3f(screenWidth - inset, screenHeight - inset, 0));
+        initialVertices.add(new Vector3f(inset, screenHeight - inset, 0));
+        Perimeter initialPerimeter = new Perimeter(initialVertices);
+        this.perimeters = new ArrayList<>();
+        this.perimeters.add(initialPerimeter);
 
-        // Layer 1: Shading Overlay
-        shadingOverlay = setupShadingOverlay(perimeter, screenWidth, screenHeight);
+        // Create initial visuals
+        perimeterGeoms = new Node("PerimeterGeometries");
+        Geometry initialPerimeterLine = perimeterRenderer.createPerimeterLine(initialPerimeter.getVertices());
+        perimeterGeoms.attachChild(initialPerimeterLine);
+        shadingOverlay = perimeterRenderer.setupShadingOverlay(initialPerimeter.getVertices(), screenWidth, screenHeight);
 
-        // Layer 2: Perimeter Line
-        perimeterGeom = createPerimeterLine(perimeter);
+        // Drawing Path (initially empty)
+        drawingPathGeom = perimeterRenderer.createDrawingPathLine();
 
         // Layer 3: Player
         player = getSpatial("player");
         player.setUserData("alive", true);
-        player.setLocalTranslation(perimeter.get(0).add(0, 0, 3));
+        player.setLocalTranslation(initialPerimeter.getVertices().get(0).add(0, 0, 3));
         player.setQueueBucket(RenderQueue.Bucket.Gui);
 
+        // Layer 3: Enemy
+        enemy = getSpatial("human");
+        Random rand = new Random();
+        float enemyWidth = 64f;
+        float enemyHeight = 64f;
+        float spawnX = inset + rand.nextFloat() * (screenWidth - inset * 2 - enemyWidth);
+        float spawnY = inset + rand.nextFloat() * (screenHeight - inset * 2 - enemyHeight);
+        enemy.setLocalTranslation(spawnX, spawnY, 3);
+        enemy.setQueueBucket(RenderQueue.Bucket.Gui);
+
         // Add control to the player
-        player.addControl(new PlayerControl(perimeter));
+        player.addControl(new PlayerControl(initialPerimeter));
 
         // Stencil buffer setup
         fpp = new FilterPostProcessor(app.getAssetManager());
         fpp.setFrameBufferDepthFormat(Image.Format.Depth24Stencil8);
-    }
-
-    private Geometry createPerimeterLine(List<Vector3f> vertices) {
-        Mesh lineMesh = new Mesh();
-        lineMesh.setMode(Mesh.Mode.LineLoop);
-        lineMesh.setBuffer(VertexBuffer.Type.Position, 3, BufferUtils.createFloatBuffer(vertices.toArray(new Vector3f[0])));
-        lineMesh.setBuffer(VertexBuffer.Type.Index, 2, new short[]{0, 1, 2, 3});
-        lineMesh.updateBound();
-
-        Material lineMat = new Material(app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
-        lineMat.setColor("Color", ColorRGBA.White);
-
-        Geometry geom = new Geometry("Perimeter", lineMesh);
-        geom.setMaterial(lineMat);
-        geom.setQueueBucket(RenderQueue.Bucket.Gui);
-        geom.setLocalTranslation(0, 0, 2);
-        return geom;
-    }
-
-    private Node setupShadingOverlay(List<Vector3f> holeVertices, float width, float height) {
-        Node overlayNode = new Node("ShadingOverlay");
-        AssetManager assetManager = app.getAssetManager();
-
-        // 1. Create the invisible mask (the "hole")
-        Mesh maskMesh = new Mesh();
-        maskMesh.setMode(Mesh.Mode.Triangles);
-        maskMesh.setBuffer(VertexBuffer.Type.Position, 3, BufferUtils.createFloatBuffer(holeVertices.toArray(new Vector3f[0])));
-        maskMesh.setBuffer(VertexBuffer.Type.Index, 3, new short[]{0, 1, 2, 0, 2, 3});
-        maskMesh.updateBound();
-
-        Geometry maskGeom = new Geometry("Mask", maskMesh);
-        Material maskMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        RenderState maskState = maskMat.getAdditionalRenderState();
-        maskState.setColorWrite(false);
-        maskState.setDepthWrite(false);
-        maskState.setStencil(true,
-                RenderState.StencilOperation.Replace, RenderState.StencilOperation.Replace, RenderState.StencilOperation.Replace,
-                RenderState.StencilOperation.Replace, RenderState.StencilOperation.Replace, RenderState.StencilOperation.Replace,
-                RenderState.TestFunction.Always, RenderState.TestFunction.Always);
-        maskState.setFrontStencilReference(1);
-        maskState.setBackStencilReference(1);
-        maskState.setFrontStencilMask(0xFF);
-        maskState.setBackStencilMask(0xFF);
-        maskGeom.setMaterial(maskMat);
-
-        // 2. Create the nighttime overlay
-        Quad overlayQuad = new Quad(width, height);
-        Geometry overlayGeom = new Geometry("Overlay", overlayQuad);
-        Material overlayMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        Texture nightTexture = assetManager.loadTexture("Textures/field_night.png");
-        overlayMat.setTexture("ColorMap", nightTexture);
-        RenderState overlayState = overlayMat.getAdditionalRenderState();
-        overlayState.setStencil(true,
-                RenderState.StencilOperation.Keep, RenderState.StencilOperation.Keep, RenderState.StencilOperation.Keep,
-                RenderState.StencilOperation.Keep, RenderState.StencilOperation.Keep, RenderState.StencilOperation.Keep,
-                RenderState.TestFunction.NotEqual, RenderState.TestFunction.NotEqual);
-        overlayState.setFrontStencilReference(1);
-        overlayState.setBackStencilReference(1);
-        overlayState.setFrontStencilMask(0xFF);
-        overlayState.setBackStencilMask(0xFF);
-        overlayGeom.setMaterial(overlayMat);
-
-        // 3. Attach both to the node. The mask will be rendered first.
-        overlayNode.attachChild(maskGeom);
-        overlayNode.attachChild(overlayGeom);
-
-        overlayNode.setQueueBucket(RenderQueue.Bucket.Gui);
-        overlayNode.setLocalTranslation(0, 0, 1);
-
-        return overlayNode;
     }
 
     @Override
@@ -158,7 +109,9 @@ public class GameAppState extends BaseAppState implements ActionListener {
         app.getViewPort().addProcessor(fpp);
         app.getGuiNode().attachChild(background);
         app.getGuiNode().attachChild(player);
-        app.getGuiNode().attachChild(perimeterGeom);
+        app.getGuiNode().attachChild(enemy);
+        app.getGuiNode().attachChild(perimeterGeoms);
+        app.getGuiNode().attachChild(drawingPathGeom);
         app.getGuiNode().attachChild(shadingOverlay);
 
         InputManager inputManager = app.getInputManager();
@@ -176,7 +129,9 @@ public class GameAppState extends BaseAppState implements ActionListener {
         app.getViewPort().removeProcessor(fpp);
         app.getGuiNode().detachChild(background);
         app.getGuiNode().detachChild(player);
-        app.getGuiNode().detachChild(perimeterGeom);
+        app.getGuiNode().detachChild(enemy);
+        app.getGuiNode().detachChild(perimeterGeoms);
+        app.getGuiNode().detachChild(drawingPathGeom);
         app.getGuiNode().detachChild(shadingOverlay);
 
         InputManager inputManager = app.getInputManager();
@@ -189,7 +144,34 @@ public class GameAppState extends BaseAppState implements ActionListener {
     }
 
     @Override
-    public void update(float tpf) {}
+    public void update(float tpf) {
+        PlayerControl control = player.getControl(PlayerControl.class);
+        if (control == null) return;
+
+        if (control.wasCollisionDetected()) {
+            Perimeter lastPerimeter = perimeters.get(perimeters.size() - 1);
+            Perimeter newPerimeter = perimeterManager.calculateNewPerimeter(lastPerimeter, control, enemy.getLocalTranslation());
+            perimeters.add(newPerimeter);
+
+            // Add new line visual
+            Geometry newPerimeterLine = perimeterRenderer.createPerimeterLine(newPerimeter.getVertices());
+            perimeterGeoms.attachChild(newPerimeterLine);
+
+            // Update shading overlay
+            if (shadingOverlay != null) {
+                shadingOverlay.removeFromParent();
+            }
+            float screenWidth = app.getCamera().getWidth();
+            float screenHeight = app.getCamera().getHeight();
+            shadingOverlay = perimeterRenderer.setupShadingOverlay(newPerimeter.getVertices(), screenWidth, screenHeight);
+            app.getGuiNode().attachChild(shadingOverlay);
+
+            control.finalizeCollision(newPerimeter);
+        }
+
+        // Update the visual representation of the drawing path
+        perimeterRenderer.updateDrawingPathVisuals(drawingPathGeom, control.getVisualDrawingPath());
+    }
 
     @Override
     public void onAction(String name, boolean isPressed, float tpf) {
