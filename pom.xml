@@ -17,8 +17,8 @@
     <!--  Java version                                               -->
     <!-- ========================================================= -->
     <properties>
-        <maven.compiler.source>24</maven.compiler.source>
-        <maven.compiler.target>24</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Change this to the fully‑qualified name of your entry point -->
@@ -48,6 +48,19 @@
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-lwjgl3</artifactId>
             <version>3.8.1-stable</version>
+        </dependency>
+
+        <!-- Lemur GUI -->
+        <dependency>
+            <groupId>com.simsilica</groupId>
+            <artifactId>lemur</artifactId>
+            <version>1.16.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-all</artifactId>
+            <version>2.4.21</version>
         </dependency>
 
         <!-- Optional: if you need physics, audio, etc. add them here -->
