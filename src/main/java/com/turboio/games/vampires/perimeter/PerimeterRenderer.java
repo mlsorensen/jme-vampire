@@ -4,6 +4,7 @@ import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
@@ -12,6 +13,8 @@ import com.jme3.scene.Node;
 import com.jme3.scene.VertexBuffer;
 import com.jme3.scene.shape.Quad;
 import com.jme3.util.BufferUtils;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class PerimeterRenderer {
@@ -79,12 +82,7 @@ public class PerimeterRenderer {
         maskMesh.setMode(Mesh.Mode.Triangles);
         maskMesh.setBuffer(VertexBuffer.Type.Position, 3, BufferUtils.createFloatBuffer(holeVertices.toArray(new Vector3f[0])));
 
-        short[] indices = new short[(holeVertices.size() - 2) * 3];
-        for (int i = 0; i < holeVertices.size() - 2; i++) {
-            indices[i * 3] = 0;
-            indices[i * 3 + 1] = (short) (i + 1);
-            indices[i * 3 + 2] = (short) (i + 2);
-        }
+        short[] indices = triangulate(holeVertices);
         maskMesh.setBuffer(VertexBuffer.Type.Index, 3, indices);
         maskMesh.updateBound();
 
@@ -118,5 +116,85 @@ public class PerimeterRenderer {
         overlayNode.setLocalTranslation(0, 0, 1);
 
         return overlayNode;
+    }
+
+    private short[] triangulate(List<Vector3f> polygon) {
+        List<Short> indices = new ArrayList<>();
+        List<Vector2f> vertices = new ArrayList<>();
+        for (Vector3f v : polygon) {
+            vertices.add(new Vector2f(v.x, v.y));
+        }
+
+        int n = vertices.size();
+        if (n < 3) return new short[0];
+
+        List<Integer> V = new ArrayList<>();
+        for (int j = 0; j < n; j++) V.add(j);
+
+        int nv = n;
+        int count = 2 * nv;
+        for (int m = 0, v = nv - 1; nv > 2; ) {
+            if ((count--) <= 0) return new short[0]; // Failsafe against infinite loop
+
+            int u = v;
+            if (nv <= u) u = 0;
+            v = u + 1;
+            if (nv <= v) v = 0;
+            int w = v + 1;
+            if (nv <= w) w = 0;
+
+            if (isEar(u, v, w, vertices, V)) {
+                indices.add(V.get(u).shortValue());
+                indices.add(V.get(v).shortValue());
+                indices.add(V.get(w).shortValue());
+                m++;
+                V.remove(v);
+                nv--;
+                count = 2 * nv;
+            }
+        }
+
+        short[] result = new short[indices.size()];
+        for (int i = 0; i < indices.size(); i++) {
+            result[i] = indices.get(i);
+        }
+        return result;
+    }
+
+    private boolean isEar(int u, int v, int w, List<Vector2f> vertices, List<Integer> V) {
+        Vector2f p1 = vertices.get(V.get(u));
+        Vector2f p2 = vertices.get(V.get(v));
+        Vector2f p3 = vertices.get(V.get(w));
+
+        // Check if the triangle is wound counter-clockwise (i.e., the corner is convex)
+        if ((p2.x - p1.x) * (p3.y - p2.y) - (p2.y - p1.y) * (p3.x - p2.x) < 0) {
+            return false;
+        }
+
+        // Check if any other vertex is inside the triangle
+        for (int i = 0; i < V.size(); i++) {
+            int p = V.get(i);
+            if (p == V.get(u) || p == V.get(v) || p == V.get(w)) continue;
+            Vector2f pt = vertices.get(p);
+            if (isInsideTriangle(p1, p2, p3, pt)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isInsideTriangle(Vector2f p1, Vector2f p2, Vector2f p3, Vector2f pt) {
+        float d1 = sign(pt, p1, p2);
+        float d2 = sign(pt, p2, p3);
+        float d3 = sign(pt, p3, p1);
+
+        boolean has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+        boolean has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+
+        return !(has_neg && has_pos);
+    }
+
+    private float sign(Vector2f p1, Vector2f p2, Vector2f p3) {
+        return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
     }
 }

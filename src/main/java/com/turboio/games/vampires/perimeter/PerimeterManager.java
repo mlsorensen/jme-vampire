@@ -15,45 +15,46 @@ import java.util.List;
 public class PerimeterManager {
 
     public Perimeter calculateNewPerimeter(Perimeter oldPerimeter, PlayerControl control, Vector3f enemyPosition) {
-        List<Vector3f> drawingPathSource = control.getDrawingPath();
-        if (drawingPathSource == null || drawingPathSource.size() < 2) {
+        List<Vector3f> drawingPath = control.getDrawingPath();
+        if (drawingPath == null || drawingPath.size() < 2) {
             return oldPerimeter; // No change
         }
 
-        List<Vector3f> drawingPath = new ArrayList<>();
-        for (Vector3f v : drawingPathSource) {
-            drawingPath.add(new Vector3f(v.x, v.y, 0));
+        int stepOffSegmentIndex = control.getStepOffSegmentIndex();
+        int collidedSegmentIndex = control.collidedSegmentIndex;
+        List<Vector3f> oldVertices = oldPerimeter.getVertices();
+
+        // The old perimeter is split into two paths by the drawing line.
+        // We will combine the drawing path with each of these two paths to form two new loops.
+
+        // Path 1: The vertices from the intersection point back to the step-off point.
+        List<Vector3f> path1 = new ArrayList<>();
+        int currentIndex = (collidedSegmentIndex + 1) % oldVertices.size();
+        while (currentIndex != (stepOffSegmentIndex + 1) % oldVertices.size()) {
+            path1.add(oldVertices.get(currentIndex));
+            currentIndex = (currentIndex + 1) % oldVertices.size();
         }
 
-        Vector3f stepOffPoint = new Vector3f(control.getStepOffPoint().x, control.getStepOffPoint().y, 0);
-        Vector3f intersectionPoint = new Vector3f(control.intersectionPoint.x, control.intersectionPoint.y, 0);
+        // Path 2: The vertices from the step-off point back to the intersection point.
+        List<Vector3f> path2 = new ArrayList<>();
+        currentIndex = (stepOffSegmentIndex + 1) % oldVertices.size();
+        while (currentIndex != (collidedSegmentIndex + 1) % oldVertices.size()) {
+            path2.add(oldVertices.get(currentIndex));
+            currentIndex = (currentIndex + 1) % oldVertices.size();
+        }
 
-        // 1. Create a clean, unified list of the old perimeter's vertices, including the new connection points.
-        List<Vector3f> unifiedPerimeter = createUnifiedPerimeter(oldPerimeter.getVertices(), control, stepOffPoint, intersectionPoint);
-
-        // 2. Find the indices of the connection points within the new unified list.
-        int startIndex = unifiedPerimeter.indexOf(stepOffPoint);
-        int endIndex = unifiedPerimeter.indexOf(intersectionPoint);
-
-        // 3. Build the two potential new loops by walking the unified perimeter.
+        // Create the two new potential perimeters (loops).
+        // Loop A = drawingPath + path1
         List<Vector3f> loopA = new ArrayList<>(drawingPath);
-        int currentIndex = endIndex;
-        while (currentIndex != startIndex) {
-            loopA.add(unifiedPerimeter.get(currentIndex));
-            currentIndex = (currentIndex + 1) % unifiedPerimeter.size();
-        }
+        loopA.addAll(path1);
 
-        List<Vector3f> loopB = new ArrayList<>();
+        // Loop B = drawingPath (reversed) + path2
         List<Vector3f> reversedDrawingPath = new ArrayList<>(drawingPath);
         Collections.reverse(reversedDrawingPath);
-        loopB.addAll(reversedDrawingPath);
-        currentIndex = startIndex;
-        while (currentIndex != endIndex) {
-            loopB.add(unifiedPerimeter.get(currentIndex));
-            currentIndex = (currentIndex + 1) % unifiedPerimeter.size();
-        }
+        List<Vector3f> loopB = new ArrayList<>(reversedDrawingPath);
+        loopB.addAll(path2);
 
-        // 4. Determine which loop contains the enemy.
+        // Determine which loop contains the enemy.
         Polygon polyA = new Polygon();
         for (Vector3f v : loopA) polyA.addPoint((int) v.x, (int) v.y);
 
@@ -61,43 +62,17 @@ public class PerimeterManager {
         for (Vector3f v : loopB) polyB.addPoint((int) v.x, (int) v.y);
 
         List<Vector3f> newPerimeterVertices;
+        // The new perimeter is the one that contains the enemy.
         if (polyA.contains(enemyPosition.x, enemyPosition.y)) {
-            newPerimeterVertices = loopA; // Keep the loop WITH the enemy
-        } else {
+            newPerimeterVertices = loopA;
+        } else if (polyB.contains(enemyPosition.x, enemyPosition.y)) {
             newPerimeterVertices = loopB;
+        } else {
+            // Failsafe: if the enemy isn't in either, something is wrong (e.g., enemy is on the line).
+            // Keep the smaller of the two loops as a sensible default.
+            newPerimeterVertices = loopA.size() < loopB.size() ? loopA : loopB;
         }
-
-        System.out.println("New Perimeter Vertices: " + newPerimeterVertices);
 
         return new Perimeter(newPerimeterVertices);
-    }
-
-    private List<Vector3f> createUnifiedPerimeter(List<Vector3f> oldPerimeter, PlayerControl control, Vector3f stepOffPoint, Vector3f intersectionPoint) {
-        List<Vector3f> unified = new ArrayList<>(oldPerimeter);
-        
-        int stepOffSegmentIndex = control.getStepOffSegmentIndex();
-        int collidedSegmentIndex = control.collidedSegmentIndex;
-
-        // Insert points, making sure to handle the case where they are on the same segment
-        if (stepOffSegmentIndex == collidedSegmentIndex) {
-            Vector3f startOfSegment = unified.get(stepOffSegmentIndex);
-            if (stepOffPoint.distanceSquared(startOfSegment) > intersectionPoint.distanceSquared(startOfSegment)) {
-                unified.add(stepOffSegmentIndex + 1, stepOffPoint);
-                unified.add(stepOffSegmentIndex + 2, intersectionPoint);
-            } else {
-                unified.add(stepOffSegmentIndex + 1, intersectionPoint);
-                unified.add(stepOffSegmentIndex + 2, stepOffPoint);
-            }
-        } else {
-            // Insert farther point first to not mess up index of the closer one
-            if (stepOffSegmentIndex > collidedSegmentIndex) {
-                unified.add(stepOffSegmentIndex + 1, stepOffPoint);
-                unified.add(collidedSegmentIndex + 1, intersectionPoint);
-            } else {
-                unified.add(collidedSegmentIndex + 1, intersectionPoint);
-                unified.add(stepOffSegmentIndex + 1, stepOffPoint);
-            }
-        }
-        return unified;
     }
 }
