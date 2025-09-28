@@ -4,6 +4,8 @@ import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.asset.AssetManager;
+import com.jme3.font.BitmapFont;
+import com.jme3.font.BitmapText;
 import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
@@ -41,6 +43,11 @@ public class GameAppState extends BaseAppState implements ActionListener {
     private List<Perimeter> perimeters;
     private PerimeterManager perimeterManager;
     private PerimeterRenderer perimeterRenderer;
+    private double originalPerimeterArea;
+    private double currentPerimeterArea;
+    private double score;
+    private BitmapText scoreText;
+    private BitmapText percentageText;
 
     private final String[] MAPPINGS = new String[]{"left", "right", "up", "down", "return"};
 
@@ -64,11 +71,14 @@ public class GameAppState extends BaseAppState implements ActionListener {
         float screenHeight = app.getCamera().getHeight();
         initialVertices.add(new Vector3f(inset, inset, 0));
         initialVertices.add(new Vector3f(screenWidth - inset, inset, 0));
-        initialVertices.add(new Vector3f(screenWidth - inset, screenHeight - inset, 0));
-        initialVertices.add(new Vector3f(inset, screenHeight - inset, 0));
+        initialVertices.add(new Vector3f(screenWidth - inset, screenHeight - inset - 50, 0));
+        initialVertices.add(new Vector3f(inset, screenHeight - inset - 50, 0));
         Perimeter initialPerimeter = new Perimeter(initialVertices);
         this.perimeters = new ArrayList<>();
         this.perimeters.add(initialPerimeter);
+        this.originalPerimeterArea = initialPerimeter.getArea();
+        this.currentPerimeterArea = originalPerimeterArea;
+        this.score = 0;
 
         // Create initial visuals
         perimeterGeoms = new Node("PerimeterGeometries");
@@ -101,6 +111,15 @@ public class GameAppState extends BaseAppState implements ActionListener {
         // Stencil buffer setup
         fpp = new FilterPostProcessor(app.getAssetManager());
         fpp.setFrameBufferDepthFormat(Image.Format.Depth24Stencil8);
+
+        // UI
+        BitmapFont guiFont = app.getAssetManager().loadFont("Interface/Fonts/Default.fnt");
+        scoreText = new BitmapText(guiFont, false);
+        scoreText.setSize(72);
+        scoreText.setLocalTranslation(10, app.getCamera().getHeight() - 10, 5);
+        percentageText = new BitmapText(guiFont, false);
+        percentageText.setSize(72);
+        percentageText.setLocalTranslation(app.getCamera().getWidth() - 450, app.getCamera().getHeight() - 10, 5);
     }
 
     @Override
@@ -113,6 +132,8 @@ public class GameAppState extends BaseAppState implements ActionListener {
         app.getGuiNode().attachChild(perimeterGeoms);
         app.getGuiNode().attachChild(drawingPathGeom);
         app.getGuiNode().attachChild(shadingOverlay);
+        app.getGuiNode().attachChild(scoreText);
+        app.getGuiNode().attachChild(percentageText);
 
         InputManager inputManager = app.getInputManager();
         inputManager.addMapping("left", new KeyTrigger(KeyInput.KEY_A));
@@ -127,12 +148,7 @@ public class GameAppState extends BaseAppState implements ActionListener {
     protected void onDisable() {
         app.getViewPort().setClearStencil(false);
         app.getViewPort().removeProcessor(fpp);
-        app.getGuiNode().detachChild(background);
-        app.getGuiNode().detachChild(player);
-        app.getGuiNode().detachChild(enemy);
-        app.getGuiNode().detachChild(perimeterGeoms);
-        app.getGuiNode().detachChild(drawingPathGeom);
-        app.getGuiNode().detachChild(shadingOverlay);
+        app.getGuiNode().detachAllChildren();
 
         InputManager inputManager = app.getInputManager();
         for (String mapping : MAPPINGS) {
@@ -153,6 +169,11 @@ public class GameAppState extends BaseAppState implements ActionListener {
             Perimeter newPerimeter = perimeterManager.calculateNewPerimeter(lastPerimeter, control, enemy.getLocalTranslation());
             perimeters.add(newPerimeter);
 
+            double lastPerimeterArea = currentPerimeterArea;
+            currentPerimeterArea = newPerimeter.getArea();
+            double capturedArea = lastPerimeterArea - currentPerimeterArea;
+            score += capturedArea * (capturedArea / lastPerimeterArea);
+
             // Add new line visual
             Geometry newPerimeterLine = perimeterRenderer.createPerimeterLine(newPerimeter.getVertices());
             perimeterGeoms.attachChild(newPerimeterLine);
@@ -167,10 +188,20 @@ public class GameAppState extends BaseAppState implements ActionListener {
             app.getGuiNode().attachChild(shadingOverlay);
 
             control.finalizeCollision(newPerimeter);
+
+            if (currentPerimeterArea / originalPerimeterArea <= 0.1) {
+                double percentage = (1 - (currentPerimeterArea / originalPerimeterArea)) * 100;
+                app.getStateManager().detach(this);
+                app.getStateManager().attach(new WinAppState(score, percentage));
+            }
         }
 
         // Update the visual representation of the drawing path
         perimeterRenderer.updateDrawingPathVisuals(drawingPathGeom, control.getVisualDrawingPath());
+
+        double percentage = (1 - (currentPerimeterArea / originalPerimeterArea)) * 100;
+        scoreText.setText("Score: " + (int) score);
+        percentageText.setText(String.format("%.2f%%", percentage));
     }
 
     @Override

@@ -29,4 +29,15 @@ public class Perimeter {
     public List<Vector3f> getVertices() {
         return vertices;
     }
+
+    public double getArea() {
+        double area = 0.0;
+        int n = vertices.size();
+        for (int i = 0; i < n; i++) {
+            Vector3f p1 = vertices.get(i);
+            Vector3f p2 = vertices.get((i + 1) % n);
+            area += (p1.x * p2.y) - (p2.x * p1.y);
+        }
+        return Math.abs(area / 2.0);
+    }
 }
