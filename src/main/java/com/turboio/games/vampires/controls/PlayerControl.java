@@ -66,16 +66,16 @@ public class PlayerControl extends AbstractControl {
         Vector3f end = perimeter.get((currentSegmentIndex + 1) % perimeter.size());
 
         // Project the player's position onto the line segment to see how far along they are
-        Vector3f playerOffset = spatial.getLocalTranslation().subtract(start);
+        Vector3f playerOffset = spatial.getLocalTranslation().subtract(start.add(0, 0, 3));
         float projection = playerOffset.dot(currentDirection);
         float segmentLength = end.distance(start);
 
         if (projection >= segmentLength) { // Reached or passed the end vertex
-            spatial.setLocalTranslation(end);
+            spatial.setLocalTranslation(end.add(0, 0, 3));
             currentSegmentIndex = (currentSegmentIndex + 1) % perimeter.size();
             updateCurrentDirection();
         } else if (projection <= 0 && moveDistance < 0) { // Reached or passed the start vertex while moving backward
-            spatial.setLocalTranslation(start);
+            spatial.setLocalTranslation(start.add(0, 0, 3));
             currentSegmentIndex = (currentSegmentIndex - 1 + perimeter.size()) % perimeter.size();
             updateCurrentDirection();
         }

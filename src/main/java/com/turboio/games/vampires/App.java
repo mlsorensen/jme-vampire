@@ -3,7 +3,6 @@ package com.turboio.games.vampires;
 import com.jme3.app.SimpleApplication;
 import com.jme3.math.Vector3f;
 import com.jme3.system.AppSettings;
-import com.simsilica.lemur.GuiGlobals;
 import com.turboio.games.vampires.states.StartScreenAppState;
 
 /**
@@ -17,6 +16,7 @@ public class App extends SimpleApplication {
         settings.setWidth(1600);
         settings.setHeight(1200);
         settings.setTitle("Vampires");
+        settings.setStencilBits(8); // Request a stencil buffer
         app.setSettings(settings);
         app.start();
     }
