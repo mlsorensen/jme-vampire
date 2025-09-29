@@ -104,7 +104,7 @@ public class GameAppState extends BaseAppState implements ActionListener {
         enemy.setQueueBucket(RenderQueue.Bucket.Gui);
 
         // Add control to the player
-        player.addControl(new PlayerControl(initialPerimeter));
+        player.addControl(new PlayerControl(initialPerimeter, perimeterManager));
 
 
         // UI

@@ -28,47 +28,44 @@ public class PerimeterManager {
         System.out.println("Drawing path has " + drawingPath.size() + " vertices");
 
         try {
-            // Convert current perimeter to JTS Polygon
-            Polygon currentArea = createJTSPolygon(oldPerimeter.getVertices());
-            
-            // Convert drawing path to JTS LineString
-            LineString playerLine = createJTSLineString(drawingPath);
-            
-            // Split the polygon using the line
-            Collection<Polygon> splitPolygons = splitPolygon(currentArea, playerLine);
-            
-            if (splitPolygons.size() != 2) {
-                System.out.println("Split resulted in " + splitPolygons.size() + " polygons, expected 2");
-                return oldPerimeter; // Fallback
-            }
-            
-            // Convert enemy position to JTS Point
+            Polygon oldJtsPerimeter = createJTSPolygon(oldPerimeter.getVertices());
+            LineString jtsDrawingPath = createJTSLineString(drawingPath);
+
+            // Union the perimeter boundary with the new drawing path
+            Geometry unioned = oldJtsPerimeter.getBoundary().union(jtsDrawingPath);
+
+            // Use Polygonizer to find all new polygons formed by the union
+            Polygonizer polygonizer = new Polygonizer();
+            polygonizer.add(unioned);
+            Collection<Polygon> newPolygons = polygonizer.getPolygons();
+
+            System.out.println("Polygonizer found " + newPolygons.size() + " new polygons.");
+
+            // Find the correct polygon to keep (the one without the enemy)
             Point enemyPoint = geometryFactory.createPoint(new Coordinate(enemyPosition.x, enemyPosition.y));
-            
-            // Find which polygon contains the enemy
-            Polygon keepPolygon = null;
-            for (Polygon poly : splitPolygons) {
-                if (poly.contains(enemyPoint)) {
-                    keepPolygon = poly;
-                    break;
+            Polygon newPerimeterPolygon = null;
+
+            if (newPolygons.size() > 1) {
+                // More than one polygon, choose the one containing the enemy
+                for (Polygon p : newPolygons) {
+                    if (p.contains(enemyPoint)) {
+                        newPerimeterPolygon = p;
+                        break; // Found our polygon
+                    }
                 }
+            } else if (!newPolygons.isEmpty()) {
+                // Only one polygon was formed, this is our new perimeter
+                newPerimeterPolygon = newPolygons.iterator().next();
             }
-            
-            if (keepPolygon == null) {
-                System.out.println("No polygon contains enemy, keeping larger one");
-                // Fallback: keep the larger polygon
-                keepPolygon = splitPolygons.stream()
-                    .max((p1, p2) -> Double.compare(p1.getArea(), p2.getArea()))
-                    .orElse(currentArea);
+
+            if (newPerimeterPolygon != null) {
+                System.out.println("Selected new perimeter with area: " + newPerimeterPolygon.getArea());
+                return new Perimeter(convertJTSToVertices(newPerimeterPolygon));
+            } else {
+                System.err.println("Could not determine new perimeter, fallback to old one.");
+                return oldPerimeter;
             }
-            
-            // Convert back to our Perimeter format
-            List<Vector3f> newVertices = convertJTSToVertices(keepPolygon);
-            System.out.println("New perimeter has " + newVertices.size() + " vertices");
-            System.out.println("--- JTS End ---");
-            
-            return new Perimeter(newVertices);
-            
+
         } catch (Exception e) {
             System.err.println("JTS calculation failed: " + e.getMessage());
             e.printStackTrace();
@@ -76,6 +73,23 @@ public class PerimeterManager {
         }
     }
     
+    public boolean isOnBoundary(Vector3f point, Perimeter perimeter) {
+        Polygon polygon = createJTSPolygon(perimeter.getVertices());
+        Point jtsPoint = geometryFactory.createPoint(new Coordinate(point.x, point.y));
+        // Use a small tolerance for boundary checks to handle floating point issues
+        return polygon.getBoundary().distance(jtsPoint) < 0.01;
+    }
+
+    public Vector3f getIntersection(LineString line, Perimeter perimeter) {
+        Polygon polygon = createJTSPolygon(perimeter.getVertices());
+        Geometry intersection = polygon.getBoundary().intersection(line);
+        if (!intersection.isEmpty()) {
+            Coordinate intersectionCoord = intersection.getCoordinate();
+            return new Vector3f((float) intersectionCoord.x, (float) intersectionCoord.y, 0);
+        }
+        return null;
+    }
+
     private Polygon createJTSPolygon(List<Vector3f> vertices) {
         Coordinate[] coords = new Coordinate[vertices.size() + 1]; // +1 to close the ring
         for (int i = 0; i < vertices.size(); i++) {
@@ -96,37 +110,6 @@ public class PerimeterManager {
             coords[i] = new Coordinate(v.x, v.y);
         }
         return geometryFactory.createLineString(coords);
-    }
-    
-    private Collection<Polygon> splitPolygon(Polygon polygon, LineString line) {
-        try {
-            // Create a very thin buffer around the line to make it a polygon
-            Geometry lineBuffer = line.buffer(0.1); // Very small buffer
-            
-            // Subtract the line buffer from the original polygon
-            Geometry result = polygon.difference(lineBuffer);
-            
-            List<Polygon> polygons = new ArrayList<>();
-            
-            if (result instanceof Polygon) {
-                polygons.add((Polygon) result);
-            } else if (result instanceof MultiPolygon) {
-                MultiPolygon multiPoly = (MultiPolygon) result;
-                for (int i = 0; i < multiPoly.getNumGeometries(); i++) {
-                    Geometry geom = multiPoly.getGeometryN(i);
-                    if (geom instanceof Polygon) {
-                        polygons.add((Polygon) geom);
-                    }
-                }
-            }
-            
-            System.out.println("Difference operation produced " + polygons.size() + " polygons");
-            return polygons;
-            
-        } catch (Exception e) {
-            System.err.println("Split operation failed: " + e.getMessage());
-            return new ArrayList<>();
-        }
     }
     
     private List<Vector3f> convertJTSToVertices(Polygon polygon) {

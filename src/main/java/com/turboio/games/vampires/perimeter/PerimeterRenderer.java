@@ -113,8 +113,8 @@ public class PerimeterRenderer {
             Poly2Tri.triangulate(polygon);
         } catch (Exception e) {
             System.err.println("Triangulation failed: " + e.getMessage());
-            // In case of failure, return an empty mesh. The old method is too complex to maintain.
-            return new Mesh();
+            // In case of failure, return a simple fallback mesh (single triangle)
+            return createFallbackMesh();
         }
 
         List<DelaunayTriangle> triangles = polygon.getTriangles();
@@ -143,6 +143,30 @@ public class PerimeterRenderer {
         mesh.setBuffer(VertexBuffer.Type.Position, 3, BufferUtils.createFloatBuffer(uniqueVerts.toArray(new Vector3f[0])));
         mesh.setBuffer(VertexBuffer.Type.TexCoord, 2, BufferUtils.createFloatBuffer(uniqueUVs.toArray(new Vector2f[0])));
         mesh.setBuffer(VertexBuffer.Type.Index, 3, BufferUtils.createIntBuffer(newIndices.stream().mapToInt(i -> i).toArray()));
+        mesh.updateBound();
+        return mesh;
+    }
+
+    private Mesh createFallbackMesh() {
+        // Create a simple single triangle mesh that won't crash
+        Vector3f[] vertices = {
+            new Vector3f(0, 0, 0),
+            new Vector3f(100, 0, 0),
+            new Vector3f(50, 100, 0)
+        };
+        
+        Vector2f[] uvs = {
+            new Vector2f(0, 0),
+            new Vector2f(1, 0),
+            new Vector2f(0.5f, 1)
+        };
+        
+        int[] indices = {0, 1, 2};
+        
+        Mesh mesh = new Mesh();
+        mesh.setBuffer(VertexBuffer.Type.Position, 3, BufferUtils.createFloatBuffer(vertices));
+        mesh.setBuffer(VertexBuffer.Type.TexCoord, 2, BufferUtils.createFloatBuffer(uvs));
+        mesh.setBuffer(VertexBuffer.Type.Index, 3, BufferUtils.createIntBuffer(indices));
         mesh.updateBound();
         return mesh;
     }
