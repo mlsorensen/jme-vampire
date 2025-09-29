@@ -18,6 +18,7 @@ import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.texture.Texture2D;
 import com.jme3.ui.Picture;
+import com.jme3.texture.Texture;
 import com.turboio.games.vampires.audio.Sound;
 import com.turboio.games.vampires.controls.PlayerControl;
 import com.turboio.games.vampires.perimeter.Perimeter;
@@ -109,6 +110,14 @@ public class GameAppState extends BaseAppState implements ActionListener {
 
         // UI
         BitmapFont guiFont = app.getAssetManager().loadFont("Font/Metal_Mania/MetalMania72.fnt");
+        for (int i = 0; i < guiFont.getPageSize(); i++) {
+            Material pageMat = guiFont.getPage(i);
+            Texture tex = pageMat.getTextureParam("ColorMap").getTextureValue();
+            if (tex != null) {
+                tex.setMinFilter(Texture.MinFilter.NearestNoMipMaps);
+                tex.setMagFilter(Texture.MagFilter.Nearest);
+            }
+        }
         scoreText = new BitmapText(guiFont);
         scoreText.setSize(72);
         scoreText.setLocalTranslation(10, app.getCamera().getHeight() - 10, 5);

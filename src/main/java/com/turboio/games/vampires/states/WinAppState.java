@@ -10,6 +10,8 @@ import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.scene.Node;
+import com.jme3.texture.Texture;
+import com.jme3.material.Material;
 
 public class WinAppState extends BaseAppState implements ActionListener {
     private SimpleApplication app;
@@ -29,6 +31,22 @@ public class WinAppState extends BaseAppState implements ActionListener {
 
         BitmapFont largeFont = app.getAssetManager().loadFont("Font/Metal_Mania/MetalMania72.fnt");
         BitmapFont smallFont = app.getAssetManager().loadFont("Font/Metal_Mania/MetalMania32.fnt");
+        for (int i = 0; i < largeFont.getPageSize(); i++) {
+            Material pageMat = largeFont.getPage(i);
+            Texture tex = pageMat.getTextureParam("ColorMap").getTextureValue();
+            if (tex != null) {
+                tex.setMinFilter(Texture.MinFilter.NearestNoMipMaps);
+                tex.setMagFilter(Texture.MagFilter.Nearest);
+            }
+        }
+        for (int i = 0; i < smallFont.getPageSize(); i++) {
+            Material pageMat = smallFont.getPage(i);
+            Texture tex = pageMat.getTextureParam("ColorMap").getTextureValue();
+            if (tex != null) {
+                tex.setMinFilter(Texture.MinFilter.NearestNoMipMaps);
+                tex.setMagFilter(Texture.MagFilter.Nearest);
+            }
+        }
 
         BitmapText winText = new BitmapText(largeFont);
         winText.setSize(largeFont.getCharSet().getRenderedSize() * 1.5f);
