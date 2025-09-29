@@ -27,10 +27,11 @@ public class WinAppState extends BaseAppState implements ActionListener {
         this.app = (SimpleApplication) app;
         this.guiNode = new Node("WinScreenGui");
 
-        BitmapFont guiFont = app.getAssetManager().loadFont("Interface/Fonts/Default.fnt");
+        BitmapFont largeFont = app.getAssetManager().loadFont("Font/Metal_Mania/MetalMania72.fnt");
+        BitmapFont smallFont = app.getAssetManager().loadFont("Font/Metal_Mania/MetalMania32.fnt");
 
-        BitmapText winText = new BitmapText(guiFont, false);
-        winText.setSize(guiFont.getCharSet().getRenderedSize() * 4);
+        BitmapText winText = new BitmapText(largeFont);
+        winText.setSize(largeFont.getCharSet().getRenderedSize() * 1.5f);
         winText.setText("YOU WIN");
         winText.setLocalTranslation(
                 (app.getCamera().getWidth() - winText.getLineWidth()) / 2,
@@ -39,8 +40,8 @@ public class WinAppState extends BaseAppState implements ActionListener {
         );
         guiNode.attachChild(winText);
 
-        BitmapText scoreText = new BitmapText(guiFont, false);
-        scoreText.setSize(guiFont.getCharSet().getRenderedSize() * 2);
+        BitmapText scoreText = new BitmapText(smallFont);
+        scoreText.setSize(smallFont.getCharSet().getRenderedSize() * 1.5f);
         scoreText.setText(String.format("Score: %.0f (%.2f%% captured)", score, percentage));
         scoreText.setLocalTranslation(
                 (app.getCamera().getWidth() - scoreText.getLineWidth()) / 2,
@@ -49,8 +50,8 @@ public class WinAppState extends BaseAppState implements ActionListener {
         );
         guiNode.attachChild(scoreText);
 
-        BitmapText restartText = new BitmapText(guiFont, false);
-        restartText.setSize(guiFont.getCharSet().getRenderedSize());
+        BitmapText restartText = new BitmapText(smallFont);
+        restartText.setSize(smallFont.getCharSet().getRenderedSize());
         restartText.setText("Press Enter to play again");
         restartText.setLocalTranslation(
                 (app.getCamera().getWidth() - restartText.getLineWidth()) / 2,

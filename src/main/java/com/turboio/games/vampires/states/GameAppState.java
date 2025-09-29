@@ -108,11 +108,11 @@ public class GameAppState extends BaseAppState implements ActionListener {
 
 
         // UI
-        BitmapFont guiFont = app.getAssetManager().loadFont("Interface/Fonts/Default.fnt");
-        scoreText = new BitmapText(guiFont, false);
+        BitmapFont guiFont = app.getAssetManager().loadFont("Font/Metal_Mania/MetalMania72.fnt");
+        scoreText = new BitmapText(guiFont);
         scoreText.setSize(72);
         scoreText.setLocalTranslation(10, app.getCamera().getHeight() - 10, 5);
-        percentageText = new BitmapText(guiFont, false);
+        percentageText = new BitmapText(guiFont);
         percentageText.setSize(72);
         percentageText.setLocalTranslation(app.getCamera().getWidth() - 450, app.getCamera().getHeight() - 10, 5);
 
