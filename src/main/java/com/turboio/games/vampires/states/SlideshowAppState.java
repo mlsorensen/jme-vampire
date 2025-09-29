@@ -17,12 +17,15 @@ import com.jme3.ui.Picture;
 import com.turboio.games.vampires.story.SlideConfig;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 public class SlideshowAppState extends BaseAppState {
 
     public interface SlideshowListener {
         void onSlideshowFinished();
     }
+
+    private static final Logger logger = Logger.getLogger(SlideshowAppState.class.getName());
 
     private final List<SlideConfig> slides;
     private final SlideshowListener listener;
@@ -151,10 +154,19 @@ public class SlideshowAppState extends BaseAppState {
         setAlpha(0f);
 
         if (slide.getBackgroundImage() != null) {
-            backgroundImage.setImage(app.getAssetManager(), slide.getBackgroundImage(), true);
-            backgroundImage.getMaterial().getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
-            if (backgroundImage.getParent() == null) {
-                root.attachChild(backgroundImage);
+            try {
+                backgroundImage.setImage(app.getAssetManager(), slide.getBackgroundImage(), true);
+                backgroundImage.getMaterial().getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
+                if (backgroundImage.getParent() == null) {
+                    root.attachChild(backgroundImage);
+                }
+            } catch (com.jme3.asset.AssetNotFoundException ex) {
+                logger.warning("Missing slide background image: " + slide.getBackgroundImage() + " - using solid color.");
+                if (backgroundImage.getParent() != null) {
+                    backgroundImage.removeFromParent();
+                }
+                Material bgMat = backgroundQuad.getMaterial();
+                bgMat.setColor("Color", parseColor(slide.getBackgroundColor()));
             }
         } else {
             if (backgroundImage.getParent() != null) {

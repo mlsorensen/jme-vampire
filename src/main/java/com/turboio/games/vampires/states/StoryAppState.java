@@ -63,12 +63,27 @@ public class StoryAppState extends BaseAppState implements LevelAppState.LevelRe
 
     private void startLevel(LevelNodeConfig config) {
         try {
-            LevelConfig levelConfig = LevelLoader.load(config.getLevel());
+            LevelConfig levelConfig = LevelLoader.load(resolveLevelPath(config.getLevel()));
             activeLevel = new LevelAppState(levelConfig, this);
             getStateManager().attach(activeLevel);
         } catch (IOException e) {
             throw new RuntimeException("Failed to load level: " + config.getLevel(), e);
         }
+    }
+
+    private String resolveLevelPath(String path) {
+        if (path == null) {
+            return null;
+        }
+        if (path.startsWith("storylines/")) {
+            return path;
+        }
+        int lastSlash = storyPath.lastIndexOf('/');
+        if (lastSlash < 0) {
+            return path;
+        }
+        String base = storyPath.substring(0, lastSlash + 1);
+        return base + "levels/" + path;
     }
 
     private void startEnding(EndingNodeConfig config) {

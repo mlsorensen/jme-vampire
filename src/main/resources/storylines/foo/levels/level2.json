@@ -1,6 +1,6 @@
 {
-  "backgroundImage": "Textures/field_night.png",
-  "foregroundImage": "Textures/field.png",
+  "backgroundImage": "Textures/foo/level1_background.png",
+  "foregroundImage": "Textures/foo/level1_foreground.png",
   "music": "Audio/vampires.wav",
   "perimeterVertices": [
     { "x": 64.0, "y": 64.0 },
@@ -12,10 +12,10 @@
     {
       "sprite": "human",
       "radius": 32.0,
-      "spawnX": 400.0,
-      "spawnY": 400.0,
+      "spawnX": 600.0,
+      "spawnY": 500.0,
       "movementClass": "com.turboio.games.vampires.controls.WanderingEnemyControl",
-      "speed": 200.0
+      "speed": 260.0
     }
   ]
 }

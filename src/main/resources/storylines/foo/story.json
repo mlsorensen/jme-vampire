@@ -12,7 +12,7 @@
     },
     "level1": {
       "type": "level",
-      "level": "levels/level1.json",
+      "level": "level1.json",
       "onWin": "slideshowB",
       "onLose": "level1"
     },
@@ -26,7 +26,7 @@
     },
     "level2": {
       "type": "level",
-      "level": "levels/level2.json",
+      "level": "level2.json",
       "onWin": "slideshowD",
       "onLose": "slideshowC"
     },
@@ -39,34 +39,34 @@
     },
     "level3": {
       "type": "level",
-      "level": "levels/level3.json",
+      "level": "level3.json",
       "onWin": "slideshowF",
       "onLose": "level3"
     },
     "slideshowF": {
       "type": "slideshow",
       "slides": [
-        { "text": "slideshow F placeholder", "duration": 3.0, "backgroundColor": "#000000" }
+        { "text": "Victory comes at a cost...", "duration": 3.0, "backgroundColor": "#000000" }
       ],
       "next": "ending"
     },
     "slideshowD": {
       "type": "slideshow",
       "slides": [
-        { "text": "Slide D placeholder", "duration": 3.0, "backgroundColor": "#000000" }
+        { "text": "Another night, another hunt.", "duration": 3.0, "backgroundColor": "#000000" }
       ],
       "next": "level4"
     },
     "level4": {
       "type": "level",
-      "level": "levels/level4.json",
+      "level": "level4.json",
       "onWin": "slideshowE",
       "onLose": "level3"
     },
     "slideshowE": {
       "type": "slideshow",
       "slides": [
-        { "text": "Slide E placeholder", "duration": 3.0, "backgroundColor": "#000000" }
+        { "text": "Night falls silent once more.", "duration": 3.0, "backgroundColor": "#000000" }
       ],
       "next": "ending"
     },

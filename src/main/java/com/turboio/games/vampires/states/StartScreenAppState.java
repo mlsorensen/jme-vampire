@@ -37,7 +37,7 @@ public class StartScreenAppState extends BaseAppState {
 
     private void startGame() {
         setEnabled(false);
-        getStateManager().attach(new StoryAppState("storylines/storyline1.json"));
+        getStateManager().attach(new StoryAppState("storylines/foo/story.json"));
         getStateManager().detach(this);
     }
 
