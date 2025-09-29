@@ -21,6 +21,7 @@ import com.jme3.ui.Picture;
 import com.jme3.texture.Texture;
 import com.turboio.games.vampires.audio.Sound;
 import com.turboio.games.vampires.controls.PlayerControl;
+import com.turboio.games.vampires.controls.WanderingEnemyControl;
 import com.turboio.games.vampires.perimeter.Perimeter;
 import com.turboio.games.vampires.perimeter.PerimeterManager;
 import com.turboio.games.vampires.perimeter.PerimeterRenderer;
@@ -49,6 +50,11 @@ public class GameAppState extends BaseAppState implements ActionListener {
     private Sound sound;
 
     private final String[] MAPPINGS = new String[]{"left", "right", "up", "down", "return"};
+
+    private final Random random = new Random();
+    private WanderingEnemyControl enemyControl;
+    private float enemySpeed = 200f;
+    private boolean gameOver = false;
 
     @Override
     protected void initialize(Application app) {
@@ -96,13 +102,15 @@ public class GameAppState extends BaseAppState implements ActionListener {
 
         // Layer 3: Enemy
         enemy = getSpatial("human");
-        Random rand = new Random();
         float enemyWidth = 64f;
         float enemyHeight = 64f;
-        float spawnX = inset + rand.nextFloat() * (screenWidth - inset * 2 - enemyWidth);
-        float spawnY = inset + rand.nextFloat() * (screenHeight - inset * 2 - enemyHeight);
+        float spawnX = inset + random.nextFloat() * (screenWidth - inset * 2 - enemyWidth);
+        float spawnY = inset + random.nextFloat() * (screenHeight - inset * 2 - enemyHeight);
         enemy.setLocalTranslation(spawnX, spawnY, 3);
         enemy.setQueueBucket(RenderQueue.Bucket.Gui);
+
+        enemyControl = new WanderingEnemyControl(initialPerimeter, enemySpeed);
+        enemy.addControl(enemyControl);
 
         // Add control to the player
         player.addControl(new PlayerControl(initialPerimeter, perimeterManager));
@@ -167,6 +175,18 @@ public class GameAppState extends BaseAppState implements ActionListener {
     public void update(float tpf) {
         PlayerControl control = player.getControl(PlayerControl.class);
         if (control == null) return;
+        if (!(Boolean) player.getUserData("alive")) {
+            return;
+        }
+
+        if (enemyControl != null) {
+            enemyControl.setPerimeter(perimeters.get(perimeters.size() - 1));
+        }
+        checkCollisions(control);
+
+        if (gameOver) {
+            return;
+        }
 
         if (control.wasCollisionDetected()) {
             Perimeter lastPerimeter = perimeters.get(perimeters.size() - 1);
@@ -193,8 +213,8 @@ public class GameAppState extends BaseAppState implements ActionListener {
 
             if (currentPerimeterArea / originalPerimeterArea <= 0.1) {
                 double percentage = (1 - (currentPerimeterArea / originalPerimeterArea)) * 100;
-                app.getStateManager().detach(this);
-                app.getStateManager().attach(new WinAppState(score, percentage));
+                endGame("YOU WIN", percentage);
+                return;
             }
         }
 
@@ -244,4 +264,100 @@ public class GameAppState extends BaseAppState implements ActionListener {
 
     @Override
     protected void cleanup(Application app) {}
+
+    private void updateEnemyMovement(float tpf) {
+        directionTimer -= tpf;
+        if (directionTimer <= 0f) {
+            enemyVelocity = randomDirection();
+            directionTimer = nextDirectionInterval();
+        }
+
+        Vector3f currentPos = enemy.getLocalTranslation();
+        Vector3f nextPos = currentPos.add(enemyVelocity.mult(enemySpeed * tpf));
+        Perimeter currentPerimeter = perimeters.get(perimeters.size() - 1);
+
+        if (!currentPerimeter.contains(nextPos)) {
+            enemyVelocity = randomDirection();
+            directionTimer = nextDirectionInterval();
+            return;
+        }
+
+        enemy.setLocalTranslation(nextPos);
+    }
+
+    private Vector3f randomDirection() {
+        Vector3f dir = new Vector3f(random.nextFloat() * 2f - 1f, random.nextFloat() * 2f - 1f, 0);
+        if (dir.lengthSquared() == 0) {
+            dir.set(1, 0, 0);
+        }
+        return dir.normalizeLocal();
+    }
+
+    private float nextDirectionInterval() {
+        return 1.5f + random.nextFloat() * 2f;
+    }
+
+    private void checkCollisions(PlayerControl control) {
+        Vector3f playerPos = player.getLocalTranslation();
+        Vector3f enemyPos = enemy.getLocalTranslation();
+        float playerRadius = ((Number) player.getUserData("radius")).floatValue();
+        float enemyRadius = ((Number) enemy.getUserData("radius")).floatValue();
+
+        if (playerPos.distance(enemyPos) <= playerRadius + enemyRadius) {
+            handlePlayerDeath();
+            return;
+        }
+
+        if (control.isDrawing()) {
+            List<Vector3f> path = control.getVisualDrawingPath();
+            if (path != null && !path.isEmpty()) {
+                if (isCircleIntersectingPolyline(enemyPos, enemyRadius, path)) {
+                    handlePlayerDeath();
+                }
+            }
+        }
+    }
+
+    private boolean isCircleIntersectingPolyline(Vector3f center, float radius, List<Vector3f> polyline) {
+        for (int i = 0; i < polyline.size() - 1; i++) {
+            Vector3f a = polyline.get(i);
+            Vector3f b = polyline.get(i + 1);
+            float dist = distanceToSegment(center, a, b);
+            if (dist <= radius) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private float distanceToSegment(Vector3f point, Vector3f start, Vector3f end) {
+        Vector3f seg = end.subtract(start);
+        Vector3f toPoint = point.subtract(start);
+        float segLenSq = seg.x * seg.x + seg.y * seg.y;
+        if (segLenSq == 0f) {
+            return point.distance(start);
+        }
+        float t = Math.max(0f, Math.min(1f, (toPoint.x * seg.x + toPoint.y * seg.y) / segLenSq));
+        Vector3f projection = start.add(seg.mult(t));
+        return projection.distance(point);
+    }
+
+    private void handlePlayerDeath() {
+        if (gameOver) {
+            return;
+        }
+        player.setUserData("alive", false);
+        player.getControl(PlayerControl.class).reset();
+        double percentage = (1 - (currentPerimeterArea / originalPerimeterArea)) * 100;
+        endGame("YOU LOSE", percentage);
+    }
+
+    private void endGame(String title, double percentage) {
+        if (gameOver) {
+            return;
+        }
+        gameOver = true;
+        app.getStateManager().detach(this);
+        app.getStateManager().attach(new EndGameAppState(title, score, percentage));
+    }
 }

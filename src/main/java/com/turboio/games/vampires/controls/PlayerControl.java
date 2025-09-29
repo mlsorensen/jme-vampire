@@ -21,7 +21,7 @@ public class PlayerControl extends AbstractControl {
 
     // Movement
     public boolean up, down, left, right;
-    private final float speed = 800f;
+    private final float speed = 400f;
     private Vector3f lastDirection;
 
     // Game Data
@@ -170,6 +170,10 @@ public class PlayerControl extends AbstractControl {
         // Add the player's current position to the end of the list
         visualPath.add(new Vector3f(spatial.getLocalTranslation().x, spatial.getLocalTranslation().y, 0));
         return visualPath;
+    }
+
+    public boolean isDrawing() {
+        return isDrawing;
     }
 
     @Override
