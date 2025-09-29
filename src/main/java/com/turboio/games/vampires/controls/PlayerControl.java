@@ -74,24 +74,33 @@ public class PlayerControl extends AbstractControl {
         float dot = desiredDirection.dot(currentDirection);
         float moveDistance;
 
-        if (dot > 0.9f) { // Moving forward
+        if (dot > 0.5f) { // Moving forward (relaxed threshold)
             moveDistance = speed * tpf;
-        } else if (dot < -0.9f) { // Moving backward
+            spatial.move(currentDirection.mult(moveDistance));
+            clampToSegment(moveDistance);
+        } else if (dot < -0.5f) { // Moving backward (relaxed threshold)
             moveDistance = -speed * tpf;
-        } else { // Perpendicular move attempt
+            spatial.move(currentDirection.mult(moveDistance));
+            clampToSegment(moveDistance);
+        } else {
+            // Check if we can move along an adjacent segment instead
+            if (tryMoveAlongAdjacentSegment(desiredDirection, tpf)) {
+                return; // Successfully moved along adjacent segment
+            }
+            
+            // If no adjacent segment works, treat as perpendicular move attempt
+            
             handleStepOff(desiredDirection, tpf);
-            return;
         }
-
-        spatial.move(currentDirection.mult(moveDistance));
-        clampToSegment(moveDistance);
     }
 
     private void handleStepOff(Vector3f desiredDirection, float tpf) {
         Vector3f currentPos = spatial.getLocalTranslation();
         Vector3f nextPos = currentPos.add(desiredDirection.mult(speed * tpf));
 
+        // Simple check: just ensure next position is inside the perimeter
         if (perimeter.contains(nextPos)) {
+            
             this.stepOffPoint = new Vector3f(currentPos.x, currentPos.y, 0);
             this.stepOffSegmentIndex = this.currentSegmentIndex;
             currentState = State.DRAWING;
@@ -113,8 +122,21 @@ public class PlayerControl extends AbstractControl {
         }
 
         Vector3f oldPos = spatial.getLocalTranslation().clone();
-        spatial.move(desiredDirection.mult(speed * tpf));
-        Vector3f newPos = spatial.getLocalTranslation();
+        Vector3f newPos = oldPos.add(desiredDirection.mult(speed * tpf));
+
+        // Self-intersection check
+        if (drawingPath.size() >= 4) {
+            for (int i = 0; i < drawingPath.size() - 3; i++) {
+                Vector3f p1 = drawingPath.get(i);
+                Vector3f p2 = drawingPath.get(i + 1);
+                Vector3f intersection = getLineIntersection(oldPos, newPos, p1, p2);
+                if (intersection != null) {
+                    return; // Block the move
+                }
+            }
+        }
+
+        spatial.setLocalTranslation(newPos);
 
         List<Vector3f> vertices = perimeter.getVertices();
         for (int i = 0; i < vertices.size(); i++) {
@@ -123,15 +145,33 @@ public class PlayerControl extends AbstractControl {
             Vector3f intersection = getLineIntersection(oldPos, newPos, p1, p2);
 
             if (intersection != null) {
-                drawingPath.add(intersection.clone());
-                spatial.setLocalTranslation(intersection.add(0, 0, SPATIAL_Z_OFFSET));
+                // A collision with the perimeter occurred.
+                if (i == this.stepOffSegmentIndex && drawingPath.size() < 4) {
+                    // The collision is with the starting segment and the path is too short.
+                    // This is considered a "cancel" action.
+                    cancelDrawing();
+                    return;
+                } else {
+                    // This is a valid collision to complete a new perimeter.
+                    drawingPath.add(intersection.clone());
+                    spatial.setLocalTranslation(intersection.add(0, 0, SPATIAL_Z_OFFSET));
 
-                this.intersectionPoint = intersection;
-                this.collidedSegmentIndex = i;
-                this.currentState = State.COLLISION_DETECTED;
-                return;
+                    this.intersectionPoint = intersection;
+                    this.collidedSegmentIndex = i;
+                    this.currentState = State.COLLISION_DETECTED;
+                    return;
+                }
             }
         }
+    }
+
+    private void cancelDrawing() {
+        this.currentState = State.ON_PERIMETER;
+        this.drawingPath = null;
+        // Move the player back to where they stepped off.
+        spatial.setLocalTranslation(this.stepOffPoint.add(0, 0, SPATIAL_Z_OFFSET));
+        this.currentSegmentIndex = this.stepOffSegmentIndex;
+        updateCurrentDirection();
     }
 
     private Vector3f getLineIntersection(Vector3f p1, Vector3f p2, Vector3f p3, Vector3f p4) {
@@ -146,7 +186,9 @@ public class PlayerControl extends AbstractControl {
         float s = (-s1_y * (p1.x - p3.x) + s1_x * (p1.y - p3.y)) / denominator;
         float t = (s2_x * (p1.y - p3.y) - s2_y * (p1.x - p3.x)) / denominator;
 
-        if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+        // Add a small epsilon to the bounds check to allow for connecting near vertices.
+        float epsilon = 0.001f;
+        if (s >= -epsilon && s <= 1 + epsilon && t > epsilon && t < 1 - epsilon) {
             return new Vector3f(p1.x + (t * s1_x), p1.y + (t * s1_y), 0);
         }
 
@@ -191,23 +233,32 @@ public class PlayerControl extends AbstractControl {
         this.currentState = State.ON_PERIMETER;
         this.drawingPath = null;
 
-        // The player is now at the intersection point on the new perimeter.
-        // Find the index of this vertex to correctly set the current segment.
-        int intersectionVertexIndex = newPerimeter.getVertices().indexOf(this.intersectionPoint);
 
-        if (intersectionVertexIndex != -1) {
-            // The player is at the start of the segment from the intersection point
-            this.currentSegmentIndex = intersectionVertexIndex;
+        // Find which segment the intersection point is actually on
+        int intersectionSegmentIndex = findSegmentContainingPoint(newPerimeter.getVertices(), this.intersectionPoint);
+
+        if (intersectionSegmentIndex != -1) {
+            // Position the player at the intersection point and set the segment
+            this.currentSegmentIndex = intersectionSegmentIndex;
+            spatial.setLocalTranslation(this.intersectionPoint.add(0, 0, SPATIAL_Z_OFFSET));
+            
         } else {
-            // This indicates a problem with the new perimeter's vertex list, as it should contain the intersection point.
-            // As a fallback, we'll just start at the beginning of the new perimeter.
-            this.currentSegmentIndex = 0;
-            // Also move the player to that point to avoid being in a weird state.
-            if (!newPerimeter.getVertices().isEmpty()) {
-                Vector3f fallbackPosition = newPerimeter.getVertices().get(0);
-                spatial.setLocalTranslation(fallbackPosition.add(0, 0, SPATIAL_Z_OFFSET));
+            // Fallback: find closest vertex
+            int intersectionVertexIndex = findClosestVertexIndex(newPerimeter.getVertices(), this.intersectionPoint);
+            if (intersectionVertexIndex != -1) {
+                this.currentSegmentIndex = intersectionVertexIndex;
+                Vector3f perimeterPosition = newPerimeter.getVertices().get(intersectionVertexIndex);
+                spatial.setLocalTranslation(perimeterPosition.add(0, 0, SPATIAL_Z_OFFSET));
+            } else {
+                // Ultimate fallback: start at the beginning
+                this.currentSegmentIndex = 0;
+                if (!newPerimeter.getVertices().isEmpty()) {
+                    Vector3f fallbackPosition = newPerimeter.getVertices().get(0);
+                    spatial.setLocalTranslation(fallbackPosition.add(0, 0, SPATIAL_Z_OFFSET));
+                }
             }
         }
+        
         updateCurrentDirection();
     }
 
@@ -245,5 +296,150 @@ public class PlayerControl extends AbstractControl {
         up = down = left = right = false;
         currentState = State.ON_PERIMETER;
         drawingPath = null;
+    }
+
+    private int findSegmentContainingPoint(List<Vector3f> vertices, Vector3f point) {
+        if (vertices.isEmpty() || point == null) {
+            return -1;
+        }
+
+        float threshold = 1.0f; // Point must be within 1 unit of the segment
+        
+        for (int i = 0; i < vertices.size(); i++) {
+            Vector3f a = vertices.get(i);
+            Vector3f b = vertices.get((i + 1) % vertices.size());
+            
+            float distance = distanceToLineSegment(point, a, b);
+            if (distance < threshold) {
+                // Also check if the point is actually between a and b (not beyond the endpoints)
+                Vector3f ab = b.subtract(a);
+                Vector3f ap = point.subtract(a);
+                
+                float abSquared = ab.lengthSquared();
+                if (abSquared == 0) continue; // Skip degenerate segments
+                
+                float t = ap.dot(ab) / abSquared;
+                if (t >= -0.01f && t <= 1.01f) { // Small tolerance for floating point errors
+                    // If t is very close to 1.0, the point is at the end vertex of this segment,
+                    // which is also the start of the next segment. In this case, prefer the next segment
+                    // so the player can move forward along the perimeter.
+                    if (t > 0.95f) {
+                        int nextSegment = (i + 1) % vertices.size();
+                        return nextSegment;
+                    }
+                    
+                    return i;
+                }
+            }
+        }
+        
+        return -1; // Point not found on any segment
+    }
+
+    private int findClosestVertexIndex(List<Vector3f> vertices, Vector3f targetPoint) {
+        if (vertices.isEmpty() || targetPoint == null) {
+            return -1;
+        }
+
+        int closestIndex = 0;
+        float closestDistance = vertices.get(0).distanceSquared(targetPoint);
+
+        for (int i = 1; i < vertices.size(); i++) {
+            float distance = vertices.get(i).distanceSquared(targetPoint);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestIndex = i;
+            }
+        }
+
+        // Only return the index if it's reasonably close (within 1 unit)
+        return closestDistance < 1.0f ? closestIndex : -1;
+    }
+
+
+    private boolean tryMoveAlongAdjacentSegment(Vector3f desiredDirection, float tpf) {
+        Vector3f currentPos = spatial.getLocalTranslation();
+        List<Vector3f> vertices = perimeter.getVertices();
+        
+        
+        // Check if we're very close to a vertex (ignoring Z coordinate)
+        for (int i = 0; i < vertices.size(); i++) {
+            Vector3f vertex = vertices.get(i);
+            Vector3f currentPos2D = new Vector3f(currentPos.x, currentPos.y, 0);
+            Vector3f vertex2D = new Vector3f(vertex.x, vertex.y, 0);
+            float distance = currentPos2D.distance(vertex2D);
+            
+            if (distance < 2.0f) { // Within 2 units of a vertex
+                // Check the two segments connected to this vertex
+                int prevSegment = (i - 1 + vertices.size()) % vertices.size();
+                int nextSegment = i;
+                
+                // Calculate directions for both segments, forward and backward
+                Vector3f prevStart = vertices.get(prevSegment);
+                Vector3f prevForward = vertex.subtract(prevStart).normalizeLocal();
+                Vector3f prevBackward = prevForward.negate();
+                
+                Vector3f nextEnd = vertices.get((i + 1) % vertices.size());
+                Vector3f nextForward = nextEnd.subtract(vertex).normalizeLocal();
+                Vector3f nextBackward = nextForward.negate();
+                
+                float prevForwardDot = desiredDirection.dot(prevForward);
+                float prevBackwardDot = desiredDirection.dot(prevBackward);
+                float nextForwardDot = desiredDirection.dot(nextForward);
+                float nextBackwardDot = desiredDirection.dot(nextBackward);
+                
+                
+                // Find the best alignment among all directions
+                float bestDot = Math.max(Math.max(prevForwardDot, prevBackwardDot), Math.max(nextForwardDot, nextBackwardDot));
+                
+                // If we're at a vertex and no direction is very good (< 0.8), allow step-off instead
+                // This prevents getting stuck in segment switching loops
+                if (bestDot < 0.8f) {
+                    return false; // Let handleStepOff handle it
+                }
+                
+                if (bestDot > 0.5f) {
+                    if (bestDot == prevForwardDot) {
+                        this.currentSegmentIndex = prevSegment;
+                        updateCurrentDirection();
+                        spatial.move(prevForward.mult(speed * tpf));
+                        clampToSegment(speed * tpf);
+                        return true;
+                    } else if (bestDot == prevBackwardDot) {
+                        this.currentSegmentIndex = prevSegment;
+                        updateCurrentDirection();
+                        spatial.move(prevBackward.mult(speed * tpf));
+                        clampToSegment(-speed * tpf); // Negative for backward movement
+                        return true;
+                    } else if (bestDot == nextForwardDot) {
+                        this.currentSegmentIndex = nextSegment;
+                        updateCurrentDirection();
+                        spatial.move(nextForward.mult(speed * tpf));
+                        clampToSegment(speed * tpf);
+                        return true;
+                    } else if (bestDot == nextBackwardDot) {
+                        this.currentSegmentIndex = nextSegment;
+                        updateCurrentDirection();
+                        spatial.move(nextBackward.mult(speed * tpf));
+                        clampToSegment(-speed * tpf); // Negative for backward movement
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return false; // No suitable adjacent segment found
+    }
+
+    private float distanceToLineSegment(Vector3f point, Vector3f a, Vector3f b) {
+        Vector3f ab = b.subtract(a);
+        Vector3f ap = point.subtract(a);
+        
+        float abSquared = ab.lengthSquared();
+        if (abSquared == 0) return ap.length(); // a == b case
+        
+        float t = Math.max(0, Math.min(1, ap.dot(ab) / abSquared));
+        Vector3f projection = a.add(ab.mult(t));
+        return point.distance(projection);
     }
 }

@@ -3,7 +3,6 @@ package com.turboio.games.vampires.states;
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
-import com.jme3.asset.AssetManager;
 import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
 import com.jme3.input.InputManager;
@@ -13,14 +12,13 @@ import com.jme3.input.controls.KeyTrigger;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
 import com.jme3.math.Vector3f;
-import com.jme3.post.FilterPostProcessor;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
-import com.jme3.texture.Image;
 import com.jme3.texture.Texture2D;
 import com.jme3.ui.Picture;
+import com.turboio.games.vampires.audio.Sound;
 import com.turboio.games.vampires.controls.PlayerControl;
 import com.turboio.games.vampires.perimeter.Perimeter;
 import com.turboio.games.vampires.perimeter.PerimeterManager;
@@ -36,9 +34,8 @@ public class GameAppState extends BaseAppState implements ActionListener {
     private Spatial player;
     private Spatial enemy;
     private Node perimeterGeoms;
-    private Node shadingOverlay;
+    private Geometry dayField;
     private Geometry drawingPathGeom;
-    private FilterPostProcessor fpp;
 
     private List<Perimeter> perimeters;
     private PerimeterManager perimeterManager;
@@ -48,6 +45,7 @@ public class GameAppState extends BaseAppState implements ActionListener {
     private double score;
     private BitmapText scoreText;
     private BitmapText percentageText;
+    private Sound sound;
 
     private final String[] MAPPINGS = new String[]{"left", "right", "up", "down", "return"};
 
@@ -55,11 +53,11 @@ public class GameAppState extends BaseAppState implements ActionListener {
     protected void initialize(Application app) {
         this.app = (SimpleApplication) app;
         this.perimeterManager = new PerimeterManager();
-        this.perimeterRenderer = new PerimeterRenderer(app.getAssetManager());
+        this.perimeterRenderer = new PerimeterRenderer(app.getAssetManager(), app.getCamera().getWidth(), app.getCamera().getHeight());
 
-        // Layer 0: Background
+        // Layer 0: Background (night field - captured areas)
         background = new Picture("Background");
-        background.setImage(app.getAssetManager(), "Textures/field.png", true);
+        background.setImage(app.getAssetManager(), "Textures/field_night.png", true);
         background.setWidth(app.getCamera().getWidth());
         background.setHeight(app.getCamera().getHeight());
         background.setLocalTranslation(0, 0, 0);
@@ -84,7 +82,7 @@ public class GameAppState extends BaseAppState implements ActionListener {
         perimeterGeoms = new Node("PerimeterGeometries");
         Geometry initialPerimeterLine = perimeterRenderer.createPerimeterLine(initialPerimeter.getVertices());
         perimeterGeoms.attachChild(initialPerimeterLine);
-        shadingOverlay = perimeterRenderer.setupShadingOverlay(initialPerimeter.getVertices(), screenWidth, screenHeight);
+        dayField = perimeterRenderer.createDayField(initialPerimeter.getVertices());
 
         // Drawing Path (initially empty)
         drawingPathGeom = perimeterRenderer.createDrawingPathLine();
@@ -108,9 +106,6 @@ public class GameAppState extends BaseAppState implements ActionListener {
         // Add control to the player
         player.addControl(new PlayerControl(initialPerimeter));
 
-        // Stencil buffer setup
-        fpp = new FilterPostProcessor(app.getAssetManager());
-        fpp.setFrameBufferDepthFormat(Image.Format.Depth24Stencil8);
 
         // UI
         BitmapFont guiFont = app.getAssetManager().loadFont("Interface/Fonts/Default.fnt");
@@ -120,20 +115,21 @@ public class GameAppState extends BaseAppState implements ActionListener {
         percentageText = new BitmapText(guiFont, false);
         percentageText.setSize(72);
         percentageText.setLocalTranslation(app.getCamera().getWidth() - 450, app.getCamera().getHeight() - 10, 5);
+
+        sound = new Sound(app.getAssetManager());
     }
 
     @Override
     protected void onEnable() {
-        app.getViewPort().setClearStencil(true);
-        app.getViewPort().addProcessor(fpp);
         app.getGuiNode().attachChild(background);
         app.getGuiNode().attachChild(player);
         app.getGuiNode().attachChild(enemy);
         app.getGuiNode().attachChild(perimeterGeoms);
         app.getGuiNode().attachChild(drawingPathGeom);
-        app.getGuiNode().attachChild(shadingOverlay);
+        app.getGuiNode().attachChild(dayField);
         app.getGuiNode().attachChild(scoreText);
         app.getGuiNode().attachChild(percentageText);
+        sound.playMusic();
 
         InputManager inputManager = app.getInputManager();
         inputManager.addMapping("left", new KeyTrigger(KeyInput.KEY_A));
@@ -146,8 +142,7 @@ public class GameAppState extends BaseAppState implements ActionListener {
 
     @Override
     protected void onDisable() {
-        app.getViewPort().setClearStencil(false);
-        app.getViewPort().removeProcessor(fpp);
+        sound.stopMusic();
         app.getGuiNode().detachAllChildren();
 
         InputManager inputManager = app.getInputManager();
@@ -179,13 +174,11 @@ public class GameAppState extends BaseAppState implements ActionListener {
             perimeterGeoms.attachChild(newPerimeterLine);
 
             // Update shading overlay
-            if (shadingOverlay != null) {
-                shadingOverlay.removeFromParent();
+            if (dayField != null) {
+                dayField.removeFromParent();
             }
-            float screenWidth = app.getCamera().getWidth();
-            float screenHeight = app.getCamera().getHeight();
-            shadingOverlay = perimeterRenderer.setupShadingOverlay(newPerimeter.getVertices(), screenWidth, screenHeight);
-            app.getGuiNode().attachChild(shadingOverlay);
+            dayField = perimeterRenderer.createDayField(newPerimeter.getVertices());
+            app.getGuiNode().attachChild(dayField);
 
             control.finalizeCollision(newPerimeter);
 

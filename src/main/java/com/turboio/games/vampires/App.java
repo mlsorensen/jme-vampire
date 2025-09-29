@@ -16,6 +16,7 @@ public class App extends SimpleApplication {
         settings.setWidth(1600);
         settings.setHeight(1200);
         settings.setTitle("Vampires");
+        settings.setAudioRenderer(AppSettings.LWJGL_OPENAL);
         settings.setStencilBits(8); // Request a stencil buffer
         app.setSettings(settings);
         app.start();
@@ -30,6 +31,7 @@ public class App extends SimpleApplication {
 
         // We start the game by attaching the start screen app state
         stateManager.attach(new StartScreenAppState());
+        inputManager.setCursorVisible(true);
     }
 
     @Override
