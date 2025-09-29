@@ -4,6 +4,7 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.math.Vector3f;
 import com.jme3.system.AppSettings;
 import com.turboio.games.vampires.states.StartScreenAppState;
+import com.turboio.games.vampires.states.StoryAppState;
 
 /**
  * The main entry point for the game.
@@ -16,8 +17,6 @@ public class App extends SimpleApplication {
         settings.setWidth(1600);
         settings.setHeight(1200);
         settings.setTitle("Vampires");
-        settings.setAudioRenderer(AppSettings.LWJGL_OPENAL);
-        settings.setStencilBits(8); // Request a stencil buffer
         app.setSettings(settings);
         app.start();
     }

@@ -9,10 +9,7 @@ import com.simsilica.lemur.Command;
 import com.simsilica.lemur.Container;
 import com.simsilica.lemur.GuiGlobals;
 import com.simsilica.lemur.style.BaseStyles;
-import com.turboio.games.vampires.level.LevelConfig;
-import com.turboio.games.vampires.level.LevelLoader;
-
-import java.io.IOException;
+import com.turboio.games.vampires.story.StoryLoader;
 
 public class StartScreenAppState extends BaseAppState {
 
@@ -20,25 +17,17 @@ public class StartScreenAppState extends BaseAppState {
 
     @Override
     protected void initialize(Application app) {
-        // Initialize Lemur GUI
         GuiGlobals.initialize(app);
-
-        // Load the 'glass' style
         BaseStyles.loadGlassStyle();
-
-        // Set 'glass' as the default style
         GuiGlobals.getInstance().getStyles().setDefaultStyle("glass");
 
-        // Create a simple container for our elements
         window = new Container();
         ((SimpleApplication) app).getGuiNode().attachChild(window);
 
-        // Create a 'Start' button
         Button startButton = window.addChild(new Button("Start"));
         startButton.setFontSize(24f);
         startButton.addClickCommands((Command<Button>) source -> startGame());
 
-        // Center the window
         window.setLocalTranslation(
             (app.getCamera().getWidth() - window.getPreferredSize().x) / 2,
             (app.getCamera().getHeight() + window.getPreferredSize().y) / 2,
@@ -47,19 +36,16 @@ public class StartScreenAppState extends BaseAppState {
     }
 
     private void startGame() {
-        try {
-            LevelConfig config = LevelLoader.load("levels/level1.json");
-            getStateManager().attach(new LevelAppState(config));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        setEnabled(false);
+        getStateManager().attach(new StoryAppState("storylines/storyline1.json"));
         getStateManager().detach(this);
     }
 
     @Override
     protected void cleanup(Application app) {
-        // Detach the Lemur window
-        window.removeFromParent();
+        if (window != null) {
+            window.removeFromParent();
+        }
     }
 
     @Override
