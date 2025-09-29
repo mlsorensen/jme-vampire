@@ -9,6 +9,7 @@ import com.turboio.games.vampires.perimeter.PerimeterManager;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.PrecisionModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.List;
 public class PlayerControl extends AbstractControl {
 
     private static final float SPATIAL_Z_OFFSET = 3f;
-    private static final GeometryFactory geometryFactory = new GeometryFactory();
+    private static final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(PrecisionModel.FLOATING_SINGLE));
 
     // Movement
     public boolean up, down, left, right;
@@ -30,7 +31,6 @@ public class PlayerControl extends AbstractControl {
     private boolean collisionDetected = false;
     private boolean isDrawing = false; // Track if we're currently drawing a cut
     public Vector3f intersectionPoint;
-    public int collidedSegmentIndex;
 
     public PlayerControl(Perimeter perimeter, PerimeterManager perimeterManager) {
         setPerimeter(perimeter);
@@ -109,6 +109,8 @@ public class PlayerControl extends AbstractControl {
         Vector3f intersection = perimeterManager.getIntersection(movementLine, perimeter);
 
         if (intersection != null) {
+            System.out.println("PlayerControl: Collision detected with perimeter.");
+            System.out.println("  Path has " + playerPath.size() + " vertices before adding collision point.");
             // Found intersection with perimeter boundary
             if (playerPath.size() >= 1) { // Need at least a starting point for a valid cut
                 this.intersectionPoint = intersection;
@@ -118,6 +120,7 @@ public class PlayerControl extends AbstractControl {
                 spatial.setLocalTranslation(intersection.add(0, 0, SPATIAL_Z_OFFSET));
                 playerPath.add(new Vector3f(intersection.x, intersection.y, 0));
             } else {
+                System.out.println("  Path too short, warping player back to start.");
                 // Path too short - reset to start of path
                 if (!playerPath.isEmpty()) {
                     Vector3f startPos = playerPath.get(0);

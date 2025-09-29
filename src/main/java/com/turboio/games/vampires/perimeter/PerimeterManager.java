@@ -3,7 +3,9 @@ package com.turboio.games.vampires.perimeter;
 import com.jme3.math.Vector3f;
 import com.turboio.games.vampires.controls.PlayerControl;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.operation.overlay.snap.GeometrySnapper;
 import org.locationtech.jts.operation.polygonize.Polygonizer;
+import org.locationtech.jts.operation.union.UnaryUnionOp;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,7 +17,7 @@ import java.util.List;
  */
 public class PerimeterManager {
     
-    private static final GeometryFactory geometryFactory = new GeometryFactory();
+    private static final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(PrecisionModel.FLOATING_SINGLE));
 
     public Perimeter calculateNewPerimeter(Perimeter oldPerimeter, PlayerControl control, Vector3f enemyPosition) {
         List<Vector3f> drawingPath = control.getDrawingPath();
@@ -24,35 +26,53 @@ public class PerimeterManager {
         }
 
         System.out.println("--- JTS PerimeterManager ---");
-        System.out.println("Old perimeter has " + oldPerimeter.getVertices().size() + " vertices");
-        System.out.println("Drawing path has " + drawingPath.size() + " vertices");
+        System.out.println("Old perimeter has " + oldPerimeter.getVertices().size() + " vertices: " + oldPerimeter.getVertices());
+        System.out.println("Drawing path has " + drawingPath.size() + " vertices: " + drawingPath);
 
         try {
             Polygon oldJtsPerimeter = createJTSPolygon(oldPerimeter.getVertices());
             LineString jtsDrawingPath = createJTSLineString(drawingPath);
+            Geometry perimeterBoundary = oldJtsPerimeter.getBoundary();
 
-            // Union the perimeter boundary with the new drawing path
-            Geometry unioned = oldJtsPerimeter.getBoundary().union(jtsDrawingPath);
+            // Snap the drawing path and the perimeter to each other to ensure they are fully noded.
+            // This is a robust way to handle precision issues where the path doesn't perfectly touch the boundary.
+            Geometry[] snappedGeoms = GeometrySnapper.snap(jtsDrawingPath, perimeterBoundary, 0.1);
+            Geometry snappedPath = snappedGeoms[0];
+            Geometry snappedBoundary = snappedGeoms[1];
+
+            // Union the snapped geometries
+            Collection<Geometry> geomsToUnion = new ArrayList<>();
+            geomsToUnion.add(snappedPath);
+            geomsToUnion.add(snappedBoundary);
+            Geometry unioned = UnaryUnionOp.union(geomsToUnion);
 
             // Use Polygonizer to find all new polygons formed by the union
             Polygonizer polygonizer = new Polygonizer();
             polygonizer.add(unioned);
+            @SuppressWarnings("unchecked") // JTS library is not generic
             Collection<Polygon> newPolygons = polygonizer.getPolygons();
 
             System.out.println("Polygonizer found " + newPolygons.size() + " new polygons.");
 
-            // Find the correct polygon to keep (the one without the enemy)
+            // Find the correct polygon to keep (the one with the enemy)
             Point enemyPoint = geometryFactory.createPoint(new Coordinate(enemyPosition.x, enemyPosition.y));
             Polygon newPerimeterPolygon = null;
 
             if (newPolygons.size() > 1) {
                 // More than one polygon, choose the one containing the enemy
+                int i = 0;
                 for (Polygon p : newPolygons) {
+                    System.out.println("  Polygon " + i + ": area=" + p.getArea() + ", containsEnemy=" + p.contains(enemyPoint));
                     if (p.contains(enemyPoint)) {
                         newPerimeterPolygon = p;
-                        break; // Found our polygon
+                        // Don't break, let's log all polygons
                     }
+                    i++;
                 }
+                if (newPerimeterPolygon == null) {
+                    System.err.println("WARN: Multiple polygons found, but none contained the enemy point.");
+                }
+
             } else if (!newPolygons.isEmpty()) {
                 // Only one polygon was formed, this is our new perimeter
                 newPerimeterPolygon = newPolygons.iterator().next();
