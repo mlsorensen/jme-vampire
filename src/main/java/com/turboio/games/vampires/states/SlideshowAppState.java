@@ -1,0 +1,217 @@
+package com.turboio.games.vampires.states;
+
+import com.jme3.app.Application;
+import com.jme3.app.SimpleApplication;
+import com.jme3.app.state.BaseAppState;
+import com.jme3.font.BitmapFont;
+import com.jme3.font.BitmapText;
+import com.jme3.math.ColorRGBA;
+import com.jme3.scene.Geometry;
+import com.jme3.scene.Node;
+import com.jme3.scene.Spatial;
+import com.jme3.scene.shape.Quad;
+import com.jme3.material.Material;
+import com.jme3.material.RenderState;
+import com.jme3.material.MatParam;
+import com.jme3.ui.Picture;
+import com.turboio.games.vampires.story.SlideConfig;
+
+import java.util.List;
+
+public class SlideshowAppState extends BaseAppState {
+
+    public interface SlideshowListener {
+        void onSlideshowFinished();
+    }
+
+    private final List<SlideConfig> slides;
+    private final SlideshowListener listener;
+
+    private SimpleApplication app;
+    private Node root;
+    private Geometry backgroundQuad;
+    private Picture backgroundImage;
+    private BitmapText text;
+
+    private int currentIndex = -1;
+    private float slideTimer = 0f;
+    private float fadeDuration = 0.5f;
+    private enum SlideState { FADING_IN, DISPLAYING, FADING_OUT }
+    private SlideState state = SlideState.FADING_IN;
+
+    public SlideshowAppState(List<SlideConfig> slides, SlideshowListener listener) {
+        this.slides = slides;
+        this.listener = listener;
+    }
+
+    @Override
+    protected void initialize(Application app) {
+        this.app = (SimpleApplication) app;
+        root = new Node("SlideshowRoot");
+        this.app.getGuiNode().attachChild(root);
+
+        createBackgroundElements();
+        createTextElement();
+
+        advanceSlide();
+    }
+
+    private void createBackgroundElements() {
+        float width = app.getCamera().getWidth();
+        float height = app.getCamera().getHeight();
+
+        Quad quad = new Quad(width, height);
+        backgroundQuad = new Geometry("SlideBackground", quad);
+        backgroundQuad.setLocalTranslation(0, 0, 0);
+        Material bgMat = new Material(app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
+        bgMat.setColor("Color", ColorRGBA.Black);
+        bgMat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
+        backgroundQuad.setMaterial(bgMat);
+        backgroundQuad.setQueueBucket(com.jme3.renderer.queue.RenderQueue.Bucket.Gui);
+        root.attachChild(backgroundQuad);
+
+        backgroundImage = new Picture("SlideImage");
+        backgroundImage.setWidth(width);
+        backgroundImage.setHeight(height);
+        backgroundImage.setLocalTranslation(0, 0, 0.1f);
+        backgroundImage.setQueueBucket(com.jme3.renderer.queue.RenderQueue.Bucket.Gui);
+    }
+
+    private void createTextElement() {
+        BitmapFont font = app.getAssetManager().loadFont("Font/Metal_Mania/MetalMania32.fnt");
+        text = new BitmapText(font, false);
+        text.setSize(font.getCharSet().getRenderedSize() * 1.25f);
+        text.setQueueBucket(com.jme3.renderer.queue.RenderQueue.Bucket.Gui);
+        text.setLocalTranslation(0, 0, 0.2f);
+        root.attachChild(text);
+    }
+
+    @Override
+    public void update(float tpf) {
+        if (slides == null || slides.isEmpty()) {
+            finish();
+            return;
+        }
+
+        slideTimer += tpf;
+        SlideConfig current = slides.get(currentIndex);
+
+        switch (state) {
+            case FADING_IN:
+                float alphaIn = Math.min(1f, slideTimer / fadeDuration);
+                setAlpha(alphaIn);
+                if (alphaIn >= 1f) {
+                    state = SlideState.DISPLAYING;
+                    slideTimer = 0f;
+                }
+                break;
+            case DISPLAYING:
+                setAlpha(1f);
+                if (slideTimer >= current.getDuration()) {
+                    state = SlideState.FADING_OUT;
+                    slideTimer = 0f;
+                }
+                break;
+            case FADING_OUT:
+                float alphaOut = Math.max(0f, 1f - (slideTimer / fadeDuration));
+                setAlpha(alphaOut);
+                if (alphaOut <= 0f) {
+                    advanceSlide();
+                }
+                break;
+        }
+    }
+
+    private void setAlpha(float alpha) {
+        Material bgMat = backgroundQuad.getMaterial();
+        MatParam colorParam = bgMat.getParam("Color");
+        ColorRGBA color = colorParam != null ? ((ColorRGBA) colorParam.getValue()) : ColorRGBA.Black;
+        bgMat.setColor("Color", new ColorRGBA(color.r, color.g, color.b, alpha));
+        text.setAlpha(alpha);
+        if (backgroundImage.getParent() != null && backgroundImage.getMaterial() != null) {
+            MatParam imgColorParam = backgroundImage.getMaterial().getParam("Color");
+            ColorRGBA base = imgColorParam != null ? ((ColorRGBA) imgColorParam.getValue()) : ColorRGBA.White;
+            backgroundImage.getMaterial().setColor("Color", new ColorRGBA(base.r, base.g, base.b, alpha));
+        }
+    }
+
+    private void advanceSlide() {
+        currentIndex++;
+        if (currentIndex >= slides.size()) {
+            finish();
+            return;
+        }
+        SlideConfig config = slides.get(currentIndex);
+        applySlide(config);
+        slideTimer = 0f;
+        state = SlideState.FADING_IN;
+    }
+
+    private void applySlide(SlideConfig slide) {
+        setAlpha(0f);
+
+        if (slide.getBackgroundImage() != null) {
+            backgroundImage.setImage(app.getAssetManager(), slide.getBackgroundImage(), true);
+            backgroundImage.getMaterial().getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
+            if (backgroundImage.getParent() == null) {
+                root.attachChild(backgroundImage);
+            }
+        } else {
+            if (backgroundImage.getParent() != null) {
+                backgroundImage.removeFromParent();
+            }
+            Material bgMat = backgroundQuad.getMaterial();
+            ColorRGBA color = parseColor(slide.getBackgroundColor());
+            bgMat.setColor("Color", color);
+        }
+
+        text.setText(slide.getText() != null ? slide.getText() : "");
+        centerText();
+    }
+
+    private void centerText() {
+        float width = text.getLineWidth();
+        float height = text.getLineHeight();
+        float x = (app.getCamera().getWidth() - width) / 2f;
+        float y = (app.getCamera().getHeight() * 0.33f) + height;
+        text.setLocalTranslation(x, y, 0.2f);
+    }
+
+    private ColorRGBA parseColor(String hex) {
+        if (hex == null) {
+            return ColorRGBA.Black;
+        }
+        try {
+            int color = (int) Long.parseLong(hex.replace("#", ""), 16);
+            float r = ((color >> 16) & 0xFF) / 255f;
+            float g = ((color >> 8) & 0xFF) / 255f;
+            float b = (color & 0xFF) / 255f;
+            return new ColorRGBA(r, g, b, 1f);
+        } catch (NumberFormatException e) {
+            return ColorRGBA.Black;
+        }
+    }
+
+    private void finish() {
+        if (root != null) {
+            root.removeFromParent();
+        }
+        getStateManager().detach(this);
+        if (listener != null) {
+            listener.onSlideshowFinished();
+        }
+    }
+
+    @Override
+    protected void cleanup(Application app) {
+        if (root != null) {
+            root.removeFromParent();
+        }
+    }
+
+    @Override
+    protected void onEnable() {}
+
+    @Override
+    protected void onDisable() {}
+}

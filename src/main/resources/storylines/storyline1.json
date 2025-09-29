@@ -1,0 +1,78 @@
+{
+  "id": "foo",
+  "start": "slideshowA",
+  "nodes": {
+    "slideshowA": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "In the beginning, it was just Victor.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Victor was hungry.", "duration": 3.0, "backgroundColor": "#000000" }
+      ],
+      "next": "level1"
+    },
+    "level1": {
+      "type": "level",
+      "level": "levels/level1.json",
+      "onWin": "slideshowB",
+      "onLose": "level1"
+    },
+    "slideshowB": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "Victor sated his thirst", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Victor looked for a new victim...", "duration": 3.0, "backgroundColor": "#000000" }
+      ],
+      "next": "level2"
+    },
+    "level2": {
+      "type": "level",
+      "level": "levels/level2.json",
+      "onWin": "slideshowD",
+      "onLose": "slideshowC"
+    },
+    "slideshowC": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "You lost, but not for long...", "duration": 3.0, "backgroundColor": "#000000" }
+      ],
+      "next": "level3"
+    },
+    "level3": {
+      "type": "level",
+      "level": "levels/level3.json",
+      "onWin": "slideshowF",
+      "onLose": "level3"
+    },
+    "slideshowF": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "slideshow F placeholder", "duration": 3.0, "backgroundColor": "#000000" }
+      ],
+      "next": "ending"
+    },
+    "slideshowD": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "Slide D placeholder", "duration": 3.0, "backgroundColor": "#000000" }
+      ],
+      "next": "level4"
+    },
+    "level4": {
+      "type": "level",
+      "level": "levels/level4.json",
+      "onWin": "slideshowE",
+      "onLose": "level3"
+    },
+    "slideshowE": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "Slide E placeholder", "duration": 3.0, "backgroundColor": "#000000" }
+      ],
+      "next": "ending"
+    },
+    "ending": {
+      "type": "ending",
+      "endingType": "gameOver"
+    }
+  }
+}
