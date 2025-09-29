@@ -141,14 +141,32 @@ Notes:
 
 ## 4. Optional Companion Metadata
 
-To help a content-authoring AI stay consistent, consider supplying additional information alongside the storyline:
+To help a content-authoring AI stay consistent, supply additional information alongside the storyline. **These details are global canon for the game and should be reused across every storyline**—do not invent new protagonists or settings unless the design team updates this canon first.
 
-- **Characters:** bios, relationships, keyword lists.
-- **World Background:** short setting synopsis, timeline, tone.
+- **Characters:** bios, relationships, keyword lists (see Canon below).
+- **World Background:** short setting synopsis, timeline, tone (see Canon below).
 - **Story Synopsis:** high-level arc and major beats.
 - **Asset Prompts:** as outlined in §2.
 
-You can embed these under unused top-level keys or maintain separate documents (e.g., `storylines/storyline1_meta.json`).
+Keep the canonical descriptions in a shared document (or embed them under unused top-level keys) that every storyline references. New stories should align with this source of truth unless the core lore explicitly evolves.
+
+---
+
+### Canon: World Background
+
+- The game takes place in a gothic, modern-day city, where supernatural beings hide among humans.
+- Tone: dark, tragic, suspenseful; neon lighting and fog blend old-world and modern aesthetics.
+
+### Canon: Style
+- The game style revolves around 2d pixel art. Character sprites are generally 64 x 64, but may vary in some cases (e.g. for special bosses)
+- Slides should be dramatic still frames, mixing action shots that tell a story with scenes
+
+### Canon: Core Characters
+
+- **Victor** – - The vampire Victor Ravenwood is a wanderer. He carries a rapier capable of cutting interdimensional holes, which he uses to pull victims into his world where they are helpless and subject to his will. He wears a read cloak and fine baroque style clothing, and has flowing silver hair, with dark red eyes.  He has seen many wars, civilizations rising and falling, and the centuries have made him grow nihilistic, until one day... Keywords: brooding, refined, nihilistic, ancient.
+- **Selene** – vampire hunter; resolute, calculating, ethically torn about alliances. Keywords: mysterious, disciplined.
+- **Elias** – human scholar aiding Victor from the shadows. Keywords: reclusive, scholarly, anxious.
+- Writers should reuse these characters unless new ones are added to the canon. Story lines can introduce new characters, or leave out anyone but Victor.
 
 ---
 
