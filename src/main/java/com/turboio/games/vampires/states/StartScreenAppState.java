@@ -3,13 +3,16 @@ package com.turboio.games.vampires.states;
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
-import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
 import com.simsilica.lemur.Button;
 import com.simsilica.lemur.Command;
 import com.simsilica.lemur.Container;
 import com.simsilica.lemur.GuiGlobals;
 import com.simsilica.lemur.style.BaseStyles;
+import com.turboio.games.vampires.level.LevelConfig;
+import com.turboio.games.vampires.level.LevelLoader;
+
+import java.io.IOException;
 
 public class StartScreenAppState extends BaseAppState {
 
@@ -44,8 +47,13 @@ public class StartScreenAppState extends BaseAppState {
     }
 
     private void startGame() {
-        setEnabled(false);
-        getStateManager().attach(new GameAppState());
+        try {
+            LevelConfig config = LevelLoader.load("levels/level1.json");
+            getStateManager().attach(new LevelAppState(config));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        getStateManager().detach(this);
     }
 
     @Override
@@ -66,7 +74,5 @@ public class StartScreenAppState extends BaseAppState {
         if (window != null) {
             window.setCullHint(Node.CullHint.Always);
         }
-        // We detach this state, so the next time it's attached, initialize will be called again.
-        getStateManager().detach(this);
     }
 }

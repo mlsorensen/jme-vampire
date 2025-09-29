@@ -29,11 +29,16 @@ public class PerimeterRenderer {
     private final AssetManager assetManager;
     private final float screenWidth;
     private final float screenHeight;
+    private String foregroundTexture = "Textures/field.png";
 
     public PerimeterRenderer(AssetManager assetManager, float screenWidth, float screenHeight) {
         this.assetManager = assetManager;
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
+    }
+
+    public void setForegroundTexture(String path) {
+        this.foregroundTexture = path;
     }
 
     public Geometry createPerimeterLine(List<Vector3f> vertices) {
@@ -62,7 +67,7 @@ public class PerimeterRenderer {
         Mesh dayMesh = triangulate(vertices);
         Geometry dayGeom = new Geometry("DayField", dayMesh);
         Material dayMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        dayMat.setTexture("ColorMap", assetManager.loadTexture("Textures/field.png"));
+        dayMat.setTexture("ColorMap", assetManager.loadTexture(foregroundTexture));
         dayMat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
         dayGeom.setMaterial(dayMat);
         dayGeom.setQueueBucket(RenderQueue.Bucket.Gui);

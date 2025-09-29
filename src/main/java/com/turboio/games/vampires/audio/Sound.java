@@ -5,25 +5,27 @@ import com.jme3.audio.AudioData;
 import com.jme3.audio.AudioNode;
 
 public class Sound {
+    private final AssetManager assetManager;
     private AudioNode backgroundMusic;
 
     public Sound(AssetManager assetManager) {
-        loadSounds(assetManager);
+        this.assetManager = assetManager;
     }
 
-    private void loadSounds(AssetManager assetManager) {
-        backgroundMusic = new AudioNode(assetManager, "Audio/vampires.wav", AudioData.DataType.Buffer);
+    public void playMusic(String path) {
+        stopMusic();
+        backgroundMusic = new AudioNode(assetManager, path, AudioData.DataType.Stream);
         backgroundMusic.setPositional(false);
         backgroundMusic.setReverbEnabled(false);
         backgroundMusic.setLooping(true);
         backgroundMusic.setVolume(1);
-    }
-
-    public void playMusic() {
         backgroundMusic.play();
     }
 
     public void stopMusic() {
-        backgroundMusic.stop();
+        if (backgroundMusic != null) {
+            backgroundMusic.stop();
+            backgroundMusic = null;
+        }
     }
 }
