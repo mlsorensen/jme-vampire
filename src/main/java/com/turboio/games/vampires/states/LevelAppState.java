@@ -9,8 +9,10 @@ import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
+import com.jme3.effect.ParticleEmitter;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
+import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
@@ -48,6 +50,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
     private Node perimeterGeoms;
     private Geometry dayField;
     private Geometry drawingPathGeom;
+    private ParticleEmitter drawingPathSparks;
 
     private List<Perimeter> perimeters;
     private PerimeterManager perimeterManager;
@@ -58,6 +61,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
     private BitmapText scoreText;
     private BitmapText percentageText;
     private Sound sound;
+    private float pulseTimer = 0;
 
     private final String[] MAPPINGS = new String[]{"left", "right", "up", "down", "return"};
 
@@ -126,12 +130,13 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         perimeterGeoms.attachChild(initialPerimeterLine);
         dayField = perimeterRenderer.createDayField(initialPerimeter.getVertices());
         drawingPathGeom = perimeterRenderer.createDrawingPathLine();
+        drawingPathSparks = perimeterRenderer.createDrawingPathSparks();
     }
 
     private void setupPlayer() {
         player = createSprite("player");
         player.setUserData("alive", true);
-        player.setLocalTranslation(perimeters.get(0).getVertices().get(0).add(0, 0, 3));
+        player.setLocalTranslation(perimeters.get(0).getVertices().get(0).add(0, 0, 4f));
         player.setQueueBucket(RenderQueue.Bucket.Gui);
         player.addControl(new PlayerControl(perimeters.get(0), perimeterManager));
     }
@@ -144,7 +149,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
                 Spatial enemySpatial = createSprite(enemyConfig.getSprite() != null ? enemyConfig.getSprite() : "human");
                 float radius = enemyConfig.getRadius() > 0 ? enemyConfig.getRadius() : ((Number) enemySpatial.getUserData("radius")).floatValue();
                 enemySpatial.setUserData("radius", radius);
-                enemySpatial.setLocalTranslation(enemyConfig.getSpawnX(), enemyConfig.getSpawnY(), 3);
+                enemySpatial.setLocalTranslation(enemyConfig.getSpawnX(), enemyConfig.getSpawnY(), 4f);
                 enemySpatial.setQueueBucket(RenderQueue.Bucket.Gui);
 
                 WanderingEnemyControl control = createMovementControl(enemyConfig);
@@ -187,8 +192,9 @@ public class LevelAppState extends BaseAppState implements ActionListener {
             app.getGuiNode().attachChild(enemy);
         }
         app.getGuiNode().attachChild(perimeterGeoms);
-        app.getGuiNode().attachChild(drawingPathGeom);
         app.getGuiNode().attachChild(dayField);
+        app.getGuiNode().attachChild(drawingPathGeom);
+        app.getGuiNode().attachChild(drawingPathSparks);
         app.getGuiNode().attachChild(scoreText);
         app.getGuiNode().attachChild(percentageText);
 
@@ -268,6 +274,15 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         }
 
         perimeterRenderer.updateDrawingPathVisuals(drawingPathGeom, control.getVisualDrawingPath());
+        updateDrawingPathSparks(control.getVisualDrawingPath());
+
+        pulseTimer += tpf * 12f;
+        float pulse = (float) (Math.sin(pulseTimer) * 0.45 + 0.55);
+        if (drawingPathGeom != null) {
+            Material mat = drawingPathGeom.getMaterial();
+            ColorRGBA baseGlow = new ColorRGBA(1f, 0.15f, 0.15f, 1f);
+            mat.setColor("GlowColor", baseGlow.mult(pulse));
+        }
 
         double percentage = (1 - (currentPerimeterArea / originalPerimeterArea)) * 100;
         scoreText.setText("Score: " + (int) score);
@@ -397,6 +412,9 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         if (player != null) {
             player.removeFromParent();
         }
+        if (drawingPathSparks != null) {
+            drawingPathSparks.removeFromParent();
+        }
         for (Spatial enemy : enemies) {
             enemy.removeFromParent();
         }
@@ -419,5 +437,22 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         if (percentageText != null) {
             percentageText.removeFromParent();
         }
+    }
+
+    private void updateDrawingPathSparks(List<Vector3f> path) {
+        if (drawingPathSparks == null) {
+            return;
+        }
+
+        if (path == null || path.size() < 2) {
+            drawingPathSparks.killAllParticles();
+            drawingPathSparks.setParticlesPerSec(0);
+            drawingPathSparks.setLocalTranslation(0, 0, 3.5f);
+            return;
+        }
+
+        drawingPathSparks.setParticlesPerSec(120);
+        Vector3f tip = path.get(path.size() - 1);
+        drawingPathSparks.setLocalTranslation(tip.x, tip.y, 3.5f);
     }
 }

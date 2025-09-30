@@ -17,9 +17,10 @@
     <!--  Java version                                               -->
     <!-- ========================================================= -->
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <jme3.version>3.8.1-stable</jme3.version>
 
         <!-- Change this to the fully‑qualified name of your entry point -->
         <mainClass>com.turboio.games.vampires.App</mainClass>
@@ -33,28 +34,24 @@
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-core</artifactId>
-            <version>3.8.1-stable</version>
+            <version>${jme3.version}</version>
         </dependency>
-
-        <!-- JME desktop (AWT) -->
+        <dependency>
+            <groupId>org.jmonkeyengine</groupId>
+            <artifactId>jme3-effects</artifactId>
+            <version>${jme3.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-desktop</artifactId>
-            <version>3.8.1-stable</version>
+            <version>${jme3.version}</version>
         </dependency>
 
         <!-- JME LWJGL3 backend (the usual choice for modern JME) -->
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-lwjgl3</artifactId>
-            <version>3.8.1-stable</version>
-        </dependency>
-
-        <!-- Lemur GUI -->
-        <dependency>
-            <groupId>com.simsilica</groupId>
-            <artifactId>lemur</artifactId>
-            <version>1.16.0</version>
+            <version>${jme3.version}</version>
         </dependency>
 
         <dependency>

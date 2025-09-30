@@ -5,8 +5,8 @@
     "slideshowA": {
       "type": "slideshow",
       "slides": [
-        { "text": "In the beginning, it was just Victor.", "duration": 3.0, "backgroundColor": "#000000" },
-        { "text": "Victor was hungry.", "duration": 3.0, "backgroundColor": "#000000" }
+        { "text": "In the end, it was just Victor.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "... and Victor was hungry.", "duration": 3.0, "backgroundColor": "#000000" }
       ],
       "next": "level1"
     },

@@ -3,36 +3,45 @@ package com.turboio.games.vampires.states;
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
+import com.jme3.font.BitmapText;
+import com.jme3.input.InputManager;
+import com.jme3.input.KeyInput;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.KeyTrigger;
 import com.jme3.scene.Node;
-import com.simsilica.lemur.Button;
-import com.simsilica.lemur.Command;
-import com.simsilica.lemur.Container;
-import com.simsilica.lemur.GuiGlobals;
-import com.simsilica.lemur.style.BaseStyles;
-import com.turboio.games.vampires.story.StoryLoader;
+import com.jme3.ui.Picture;
 
-public class StartScreenAppState extends BaseAppState {
+public class StartScreenAppState extends BaseAppState implements ActionListener {
 
-    private Container window;
+    private static final String START_GAME = "StartGame";
+    private Node guiNode;
+    private BitmapText startText;
+    private Picture background;
 
     @Override
     protected void initialize(Application app) {
-        GuiGlobals.initialize(app);
-        BaseStyles.loadGlassStyle();
-        GuiGlobals.getInstance().getStyles().setDefaultStyle("glass");
+        guiNode = ((SimpleApplication) app).getGuiNode();
 
-        window = new Container();
-        ((SimpleApplication) app).getGuiNode().attachChild(window);
+        // Background
+        background = new Picture("Start Screen Background");
+        background.setImage(app.getAssetManager(), "Textures/startscreen.png", true);
+        background.setWidth(app.getCamera().getWidth());
+        background.setHeight(app.getCamera().getHeight());
+        guiNode.attachChild(background);
 
-        Button startButton = window.addChild(new Button("Start"));
-        startButton.setFontSize(24f);
-        startButton.addClickCommands((Command<Button>) source -> startGame());
 
-        window.setLocalTranslation(
-            (app.getCamera().getWidth() - window.getPreferredSize().x) / 2,
-            (app.getCamera().getHeight() + window.getPreferredSize().y) / 2,
-            0
+        startText = new BitmapText(app.getAssetManager().loadFont("Font/Metal_Mania/MetalMania72.fnt"));
+        startText.setText("Press Space to Start");
+        startText.setLocalTranslation(
+                (app.getCamera().getWidth() - startText.getLineWidth()) / 2,
+                startText.getLineHeight() + 20f,
+                0
         );
+        guiNode.attachChild(startText);
+
+        InputManager inputManager = app.getInputManager();
+        inputManager.addMapping(START_GAME, new KeyTrigger(KeyInput.KEY_SPACE));
+        inputManager.addListener(this, START_GAME);
     }
 
     private void startGame() {
@@ -43,22 +52,39 @@ public class StartScreenAppState extends BaseAppState {
 
     @Override
     protected void cleanup(Application app) {
-        if (window != null) {
-            window.removeFromParent();
+        guiNode.detachChild(startText);
+        guiNode.detachChild(background);
+        InputManager inputManager = app.getInputManager();
+        if (inputManager.hasMapping(START_GAME)) {
+            inputManager.deleteMapping(START_GAME);
         }
+        inputManager.removeListener(this);
     }
 
     @Override
     protected void onEnable() {
-        if (window != null) {
-            window.setCullHint(Node.CullHint.Inherit);
+        if (startText != null) {
+            startText.setCullHint(Node.CullHint.Inherit);
+        }
+        if (background != null) {
+            background.setCullHint(Node.CullHint.Inherit);
         }
     }
 
     @Override
     protected void onDisable() {
-        if (window != null) {
-            window.setCullHint(Node.CullHint.Always);
+        if (startText != null) {
+            startText.setCullHint(Node.CullHint.Always);
+        }
+        if (background != null) {
+            background.setCullHint(Node.CullHint.Always);
+        }
+    }
+
+    @Override
+    public void onAction(String name, boolean isPressed, float tpf) {
+        if (name.equals(START_GAME) && !isPressed) {
+            startGame();
         }
     }
 }

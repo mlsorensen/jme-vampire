@@ -2,6 +2,8 @@ package com.turboio.games.vampires;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.math.Vector3f;
+import com.jme3.post.FilterPostProcessor;
+import com.jme3.post.filters.BloomFilter;
 import com.jme3.system.AppSettings;
 import com.turboio.games.vampires.states.StartScreenAppState;
 
@@ -28,6 +30,13 @@ public class App extends SimpleApplication {
         getFlyByCamera().setEnabled(false);
         setDisplayStatView(SHOW_STATS);
         setDisplayFps(SHOW_STATS);
+
+        FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
+        BloomFilter bloom = new BloomFilter(BloomFilter.GlowMode.Objects);
+        bloom.setBloomIntensity(2.5f);
+        bloom.setExposurePower(2.0f);
+        fpp.addFilter(bloom);
+        viewPort.addProcessor(fpp);
 
         stateManager.attach(new StartScreenAppState());
         inputManager.setCursorVisible(true);

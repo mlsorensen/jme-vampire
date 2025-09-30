@@ -1,4 +1,4 @@
-# Vampires Story Specification
+# Elegy of Shadows -  Story Specification
 
 This document describes the JSON formats currently consumed by the game along with optional metadata you can provide to an AI when authoring new content. The engine honours only the required fields described in §§1–3; any extra sections are ignored but can live alongside the data for documentation.
 
