@@ -221,7 +221,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
     @Override
     protected void onDisable() {
         if (sound != null) {
-            sound.stopMusic();
+            sound.stopAllSounds();
         }
         cleanupScene();
 
@@ -246,6 +246,8 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         if (!(Boolean) player.getUserData("alive")) {
             return;
         }
+
+        handleDrawingSounds(control);
 
         for (int i = 0; i < enemyControls.size(); i++) {
             enemyControls.get(i).setPerimeter(perimeters.get(perimeters.size() - 1));
@@ -299,6 +301,21 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         double percentage = (1 - (currentPerimeterArea / originalPerimeterArea)) * 100;
         scoreText.setText("Score: " + (int) score);
         percentageText.setText(String.format("%.2f%%", percentage));
+    }
+
+    private void handleDrawingSounds(PlayerControl control) {
+        switch (control.getDrawingState()) {
+            case STARTING_DRAW:
+                sound.playSound("Audio/cut-start.wav");
+                sound.startLoop("Audio/cut-active.wav", "drawing");
+                control.advanceDrawingState();
+                break;
+            case ENDING_DRAW:
+                sound.stopLoop("drawing");
+                sound.playSound("Audio/cut-end.wav");
+                control.advanceDrawingState();
+                break;
+        }
     }
 
     @Override
@@ -424,7 +441,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         }
         gameOver = true;
         if (sound != null) {
-            sound.stopMusic();
+            sound.stopAllSounds();
         }
         cleanupScene();
         app.getStateManager().detach(this);

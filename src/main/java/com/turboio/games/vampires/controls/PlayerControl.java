@@ -16,6 +16,13 @@ import java.util.List;
 
 public class PlayerControl extends AbstractControl {
 
+    public enum DrawingState {
+        NOT_DRAWING,
+        STARTING_DRAW,
+        DRAWING,
+        ENDING_DRAW
+    }
+
     private static final float SPATIAL_Z_OFFSET = 3f;
     private static final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(PrecisionModel.FLOATING_SINGLE));
 
@@ -29,15 +36,13 @@ public class PlayerControl extends AbstractControl {
     private PerimeterManager perimeterManager;
     private List<Vector3f> playerPath;
     private boolean collisionDetected = false;
-    private boolean isDrawing = false; // Track if we're currently drawing a cut
+    private DrawingState drawingState = DrawingState.NOT_DRAWING;
     public Vector3f intersectionPoint;
 
     public PlayerControl(Perimeter perimeter, PerimeterManager perimeterManager) {
         setPerimeter(perimeter);
         this.perimeterManager = perimeterManager;
         this.playerPath = new ArrayList<>();
-        this.collisionDetected = false;
-        this.isDrawing = false;
         this.lastDirection = new Vector3f();
     }
 
@@ -58,7 +63,9 @@ public class PlayerControl extends AbstractControl {
             return; // No input
         }
 
-        if (isDrawing && lastDirection.lengthSquared() > 0 && !desiredDirection.equals(lastDirection)) {
+        boolean isCurrentlyDrawing = (drawingState == DrawingState.DRAWING || drawingState == DrawingState.STARTING_DRAW);
+
+        if (isCurrentlyDrawing && lastDirection.lengthSquared() > 0 && !desiredDirection.equals(lastDirection)) {
             playerPath.add(new Vector3f(spatial.getLocalTranslation().x, spatial.getLocalTranslation().y, 0));
         }
         lastDirection.set(desiredDirection);
@@ -66,7 +73,7 @@ public class PlayerControl extends AbstractControl {
         Vector3f currentPos = spatial.getLocalTranslation();
         Vector3f nextPos = currentPos.add(desiredDirection.mult(speed * tpf));
 
-        if (isDrawing) {
+        if (isCurrentlyDrawing) {
             // When drawing, check for collision with perimeter
             if (!perimeter.contains(nextPos)) {
                 checkForPerimeterCollision(currentPos, nextPos);
@@ -81,16 +88,11 @@ public class PlayerControl extends AbstractControl {
     }
 
     public void toggleDrawing() {
-        isDrawing = !isDrawing;
-        if (isDrawing) {
-            // Started drawing
+        // Only allow starting a draw if we are not already in the middle of one.
+        if (drawingState == DrawingState.NOT_DRAWING || drawingState == DrawingState.ENDING_DRAW) {
+            drawingState = DrawingState.STARTING_DRAW;
             playerPath.clear();
             playerPath.add(new Vector3f(spatial.getLocalTranslation().x, spatial.getLocalTranslation().y, 0));
-        } else {
-            // Stopped drawing - snap back to perimeter
-            Vector3f snappedPos = perimeterManager.getClosestPointOnPerimeter(spatial.getLocalTranslation(), perimeter);
-            spatial.setLocalTranslation(snappedPos.add(0, 0, SPATIAL_Z_OFFSET));
-            playerPath.clear();
         }
     }
 
@@ -103,24 +105,17 @@ public class PlayerControl extends AbstractControl {
         Vector3f intersection = perimeterManager.getIntersection(movementLine, perimeter);
 
         if (intersection != null) {
-            System.out.println("PlayerControl: Collision detected with perimeter.");
-            System.out.println("  Path has " + playerPath.size() + " vertices before adding collision point.");
-            // Found intersection with perimeter boundary
-            if (playerPath.size() >= 1) { // Need at least a starting point for a valid cut
+            if (playerPath.size() >= 1) {
                 this.intersectionPoint = intersection;
                 this.collisionDetected = true;
-                
-                // Position player at intersection point
                 spatial.setLocalTranslation(intersection.add(0, 0, SPATIAL_Z_OFFSET));
                 playerPath.add(new Vector3f(intersection.x, intersection.y, 0));
             } else {
-                System.out.println("  Path too short, warping player back to start.");
-                // Path too short - reset to start of path
                 if (!playerPath.isEmpty()) {
                     Vector3f startPos = playerPath.get(0);
                     spatial.setLocalTranslation(startPos.add(0, 0, SPATIAL_Z_OFFSET));
                     playerPath.clear();
-                    isDrawing = false; // Stop drawing
+                    drawingState = DrawingState.NOT_DRAWING;
                 }
             }
         }
@@ -164,8 +159,6 @@ public class PlayerControl extends AbstractControl {
         }
     }
 
-
-
     public boolean wasCollisionDetected() {
         return collisionDetected;
     }
@@ -173,10 +166,8 @@ public class PlayerControl extends AbstractControl {
     public void finalizeCollision(Perimeter newPerimeter) {
         setPerimeter(newPerimeter);
         this.collisionDetected = false;
-        this.isDrawing = false;
+        this.drawingState = DrawingState.ENDING_DRAW;
         this.playerPath.clear();
-        
-        // Position player at intersection point
         spatial.setLocalTranslation(this.intersectionPoint.add(0, 0, SPATIAL_Z_OFFSET));
     }
 
@@ -185,18 +176,28 @@ public class PlayerControl extends AbstractControl {
     }
 
     public List<Vector3f> getVisualDrawingPath() {
-        if (!isDrawing || playerPath.isEmpty()) {
+        if (!isDrawing() || playerPath.isEmpty()) {
             return null;
         }
-        // Create a temporary list for visualization
         List<Vector3f> visualPath = new ArrayList<>(playerPath);
-        // Add the player's current position to the end of the list
         visualPath.add(new Vector3f(spatial.getLocalTranslation().x, spatial.getLocalTranslation().y, 0));
         return visualPath;
     }
 
+    public DrawingState getDrawingState() {
+        return drawingState;
+    }
+
+    public void advanceDrawingState() {
+        if (drawingState == DrawingState.STARTING_DRAW) {
+            drawingState = DrawingState.DRAWING;
+        } else if (drawingState == DrawingState.ENDING_DRAW) {
+            drawingState = DrawingState.NOT_DRAWING;
+        }
+    }
+
     public boolean isDrawing() {
-        return isDrawing;
+        return drawingState == DrawingState.DRAWING || drawingState == DrawingState.STARTING_DRAW;
     }
 
     @Override
@@ -205,8 +206,7 @@ public class PlayerControl extends AbstractControl {
     public void reset() {
         up = down = left = right = false;
         collisionDetected = false;
-        isDrawing = false;
+        drawingState = DrawingState.NOT_DRAWING;
         playerPath.clear();
     }
-
 }
