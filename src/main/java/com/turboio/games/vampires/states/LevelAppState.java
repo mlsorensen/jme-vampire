@@ -194,7 +194,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         app.getGuiNode().attachChild(perimeterGeoms);
         app.getGuiNode().attachChild(dayField);
         app.getGuiNode().attachChild(drawingPathGeom);
-        app.getGuiNode().attachChild(drawingPathSparks);
+        app.getRootNode().attachChild(drawingPathSparks);
         app.getGuiNode().attachChild(scoreText);
         app.getGuiNode().attachChild(percentageText);
 
@@ -412,9 +412,6 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         if (player != null) {
             player.removeFromParent();
         }
-        if (drawingPathSparks != null) {
-            drawingPathSparks.removeFromParent();
-        }
         for (Spatial enemy : enemies) {
             enemy.removeFromParent();
         }
@@ -424,12 +421,15 @@ public class LevelAppState extends BaseAppState implements ActionListener {
             perimeterGeoms.removeFromParent();
             perimeterGeoms.detachAllChildren();
         }
-        if (drawingPathGeom != null) {
-            drawingPathGeom.removeFromParent();
-        }
         if (dayField != null) {
             dayField.removeFromParent();
             dayField = null;
+        }
+        if (drawingPathGeom != null) {
+            drawingPathGeom.removeFromParent();
+        }
+        if (drawingPathSparks != null) {
+            drawingPathSparks.removeFromParent();
         }
         if (scoreText != null) {
             scoreText.removeFromParent();
@@ -451,8 +451,9 @@ public class LevelAppState extends BaseAppState implements ActionListener {
             return;
         }
 
-        drawingPathSparks.setParticlesPerSec(120);
+        drawingPathSparks.setParticlesPerSec(200);
         Vector3f tip = path.get(path.size() - 1);
         drawingPathSparks.setLocalTranslation(tip.x, tip.y, 3.5f);
+        drawingPathSparks.emitAllParticles();
     }
 }

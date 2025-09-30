@@ -5,6 +5,10 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
+import com.jme3.input.InputManager;
+import com.jme3.input.KeyInput;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.KeyTrigger;
 import com.jme3.math.ColorRGBA;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
@@ -19,13 +23,14 @@ import com.turboio.games.vampires.story.SlideConfig;
 import java.util.List;
 import java.util.logging.Logger;
 
-public class SlideshowAppState extends BaseAppState {
+public class SlideshowAppState extends BaseAppState implements ActionListener {
 
     public interface SlideshowListener {
         void onSlideshowFinished();
     }
 
     private static final Logger logger = Logger.getLogger(SlideshowAppState.class.getName());
+    private static final String NEXT_SLIDE = "NextSlide";
 
     private final List<SlideConfig> slides;
     private final SlideshowListener listener;
@@ -55,6 +60,11 @@ public class SlideshowAppState extends BaseAppState {
 
         createBackgroundElements();
         createTextElement();
+
+        // Register key input for advancing slides
+        InputManager inputManager = this.app.getInputManager();
+        inputManager.addMapping(NEXT_SLIDE, new KeyTrigger(KeyInput.KEY_SPACE));
+        inputManager.addListener(this, NEXT_SLIDE);
 
         advanceSlide();
     }
@@ -219,6 +229,13 @@ public class SlideshowAppState extends BaseAppState {
         if (root != null) {
             root.removeFromParent();
         }
+        
+        // Clean up input mapping
+        InputManager inputManager = this.app.getInputManager();
+        if (inputManager.hasMapping(NEXT_SLIDE)) {
+            inputManager.deleteMapping(NEXT_SLIDE);
+        }
+        inputManager.removeListener(this);
     }
 
     @Override
@@ -226,4 +243,12 @@ public class SlideshowAppState extends BaseAppState {
 
     @Override
     protected void onDisable() {}
+
+    @Override
+    public void onAction(String name, boolean isPressed, float tpf) {
+        if (name.equals(NEXT_SLIDE) && !isPressed) {
+            // Skip to next slide immediately when Space is pressed
+            advanceSlide();
+        }
+    }
 }

@@ -125,7 +125,7 @@ public class PerimeterRenderer {
         emitter.setImagesY(2);
         emitter.setStartColor(new ColorRGBA(1f, 0.6f, 0.2f, 1f));
         emitter.setEndColor(new ColorRGBA(1f, 0.1f, 0.1f, 0.2f));
-        emitter.setStartSize(14f);
+        emitter.setStartSize(7f);
         emitter.setEndSize(5f);
         emitter.setGravity(0, 0, 0);
         emitter.setParticlesPerSec(0);
@@ -133,7 +133,6 @@ public class PerimeterRenderer {
         emitter.setHighLife(0.5f);
         emitter.getParticleInfluencer().setInitialVelocity(new Vector3f(0, 0, 0));
         emitter.getParticleInfluencer().setVelocityVariation(15f);
-        emitter.setQueueBucket(RenderQueue.Bucket.Gui);
         emitter.setLocalTranslation(0, 0, 3.5f);
         return emitter;
     }

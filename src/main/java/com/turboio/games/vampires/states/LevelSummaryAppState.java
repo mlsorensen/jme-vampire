@@ -10,7 +10,11 @@ import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
+import com.jme3.renderer.queue.RenderQueue;
+import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
+import com.jme3.scene.shape.Quad;
 import com.jme3.texture.Texture;
 
 public class LevelSummaryAppState extends BaseAppState implements ActionListener {
@@ -39,6 +43,18 @@ public class LevelSummaryAppState extends BaseAppState implements ActionListener
     protected void initialize(Application app) {
         this.app = (SimpleApplication) app;
         this.guiNode = new Node("LevelSummaryGui");
+
+        // Create black background to cover the level
+        float width = app.getCamera().getWidth();
+        float height = app.getCamera().getHeight();
+        Quad quad = new Quad(width, height);
+        Geometry background = new Geometry("SummaryBackground", quad);
+        background.setLocalTranslation(0, 0, 0);
+        Material bgMat = new Material(app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
+        bgMat.setColor("Color", ColorRGBA.Black);
+        background.setMaterial(bgMat);
+        background.setQueueBucket(RenderQueue.Bucket.Gui);
+        guiNode.attachChild(background);
 
         BitmapFont largeFont = app.getAssetManager().loadFont("Font/Metal_Mania/MetalMania72.fnt");
         BitmapFont smallFont = app.getAssetManager().loadFont("Font/Metal_Mania/MetalMania32.fnt");
