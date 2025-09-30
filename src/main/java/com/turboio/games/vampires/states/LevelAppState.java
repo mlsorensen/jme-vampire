@@ -9,7 +9,6 @@ import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
-import com.jme3.effect.ParticleEmitter;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
@@ -29,6 +28,7 @@ import com.turboio.games.vampires.level.LevelConfig;
 import com.turboio.games.vampires.perimeter.Perimeter;
 import com.turboio.games.vampires.perimeter.PerimeterManager;
 import com.turboio.games.vampires.perimeter.PerimeterRenderer;
+import com.turboio.games.vampires.perimeter.SparkEffect;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +50,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
     private Node perimeterGeoms;
     private Geometry dayField;
     private Geometry drawingPathGeom;
-    private ParticleEmitter drawingPathSparks;
+    private SparkEffect sparkEffect;
 
     private List<Perimeter> perimeters;
     private PerimeterManager perimeterManager;
@@ -130,7 +130,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         perimeterGeoms.attachChild(initialPerimeterLine);
         dayField = perimeterRenderer.createDayField(initialPerimeter.getVertices());
         drawingPathGeom = perimeterRenderer.createDrawingPathLine();
-        drawingPathSparks = perimeterRenderer.createDrawingPathSparks();
+        sparkEffect = new SparkEffect(app.getGuiNode(), app.getAssetManager());
     }
 
     private void setupPlayer() {
@@ -194,7 +194,6 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         app.getGuiNode().attachChild(perimeterGeoms);
         app.getGuiNode().attachChild(dayField);
         app.getGuiNode().attachChild(drawingPathGeom);
-        app.getRootNode().attachChild(drawingPathSparks);
         app.getGuiNode().attachChild(scoreText);
         app.getGuiNode().attachChild(percentageText);
 
@@ -275,6 +274,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
 
         perimeterRenderer.updateDrawingPathVisuals(drawingPathGeom, control.getVisualDrawingPath());
         updateDrawingPathSparks(control.getVisualDrawingPath());
+        sparkEffect.update(tpf);
 
         pulseTimer += tpf * 12f;
         float pulse = (float) (Math.sin(pulseTimer) * 0.45 + 0.55);
@@ -428,8 +428,8 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         if (drawingPathGeom != null) {
             drawingPathGeom.removeFromParent();
         }
-        if (drawingPathSparks != null) {
-            drawingPathSparks.removeFromParent();
+        if (sparkEffect != null) {
+            sparkEffect.clear();
         }
         if (scoreText != null) {
             scoreText.removeFromParent();
@@ -440,20 +440,16 @@ public class LevelAppState extends BaseAppState implements ActionListener {
     }
 
     private void updateDrawingPathSparks(List<Vector3f> path) {
-        if (drawingPathSparks == null) {
+        if (sparkEffect == null) {
             return;
         }
 
         if (path == null || path.size() < 2) {
-            drawingPathSparks.killAllParticles();
-            drawingPathSparks.setParticlesPerSec(0);
-            drawingPathSparks.setLocalTranslation(0, 0, 3.5f);
             return;
         }
 
-        drawingPathSparks.setParticlesPerSec(200);
+        // Emit a few sparks at the tip of the drawing path
         Vector3f tip = path.get(path.size() - 1);
-        drawingPathSparks.setLocalTranslation(tip.x, tip.y, 3.5f);
-        drawingPathSparks.emitAllParticles();
+        sparkEffect.emitSparks(tip, 2);
     }
 }

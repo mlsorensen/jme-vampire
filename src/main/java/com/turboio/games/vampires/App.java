@@ -26,31 +26,18 @@ public class App extends SimpleApplication {
     @Override
     public void simpleInitApp() {
         cam.setParallelProjection(true);
-        
-        // Configure camera to see screen coordinates for rootNode elements
-        float width = settings.getWidth();
-        float height = settings.getHeight();
-        cam.setFrustum(1, 1000, 0, width, 0, height);
-        cam.setLocation(new Vector3f(width / 2f, height / 2f, 10f));
-        
+        cam.setLocation(new Vector3f(0, 0, 0.5f));
         getFlyByCamera().setEnabled(false);
         setDisplayStatView(SHOW_STATS);
         setDisplayFps(SHOW_STATS);
 
-        // Apply bloom filter to both viewports for complete coverage
-        FilterPostProcessor guiFpp = new FilterPostProcessor(assetManager);
-        BloomFilter guiBloom = new BloomFilter(BloomFilter.GlowMode.Objects);
-        guiBloom.setBloomIntensity(2.5f);
-        guiBloom.setExposurePower(2.0f);
-        guiFpp.addFilter(guiBloom);
-        guiViewPort.addProcessor(guiFpp);
-        
-        FilterPostProcessor mainFpp = new FilterPostProcessor(assetManager);
-        BloomFilter mainBloom = new BloomFilter(BloomFilter.GlowMode.Objects);
-        mainBloom.setBloomIntensity(2.5f);
-        mainBloom.setExposurePower(2.0f);
-        mainFpp.addFilter(mainBloom);
-        viewPort.addProcessor(mainFpp);
+        // Apply bloom filter to GUI viewport for glow effects
+        FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
+        BloomFilter bloom = new BloomFilter(BloomFilter.GlowMode.Objects);
+        bloom.setBloomIntensity(2.5f);
+        bloom.setExposurePower(2.0f);
+        fpp.addFilter(bloom);
+        guiViewPort.addProcessor(fpp);
 
         stateManager.attach(new StartScreenAppState());
         inputManager.setCursorVisible(true);

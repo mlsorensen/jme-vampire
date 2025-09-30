@@ -1,9 +1,6 @@
 package com.turboio.games.vampires.perimeter;
 
 import com.jme3.asset.AssetManager;
-import com.jme3.asset.AssetNotFoundException;
-import com.jme3.effect.ParticleEmitter;
-import com.jme3.effect.ParticleMesh;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
@@ -16,10 +13,10 @@ import com.jme3.scene.Node;
 import com.jme3.scene.VertexBuffer;
 import com.jme3.scene.shape.Quad;
 import com.jme3.texture.Image;
-import com.jme3.texture.Texture2D;
 import com.jme3.texture.Texture;
-import java.nio.ByteBuffer;
+import com.jme3.texture.Texture2D;
 import com.jme3.util.BufferUtils;
+import java.nio.ByteBuffer;
 import org.poly2tri.Poly2Tri;
 import org.poly2tri.geometry.polygon.Polygon;
 import org.poly2tri.geometry.polygon.PolygonPoint;
@@ -109,59 +106,6 @@ public class PerimeterRenderer {
         return geom;
     }
 
-    public ParticleEmitter createDrawingPathSparks() {
-        ParticleEmitter emitter = new ParticleEmitter("DrawingPathSparks", ParticleMesh.Type.Triangle, 96);
-        Material sparkMat = new Material(assetManager, "Common/MatDefs/Misc/Particle.j3md");
-        Texture2D sparkTexture;
-        try {
-            sparkTexture = (Texture2D) assetManager.loadTexture("Effects/Explosion/flash.png");
-        } catch (AssetNotFoundException e) {
-            sparkTexture = createFallbackSparkTexture();
-        }
-        sparkMat.setTexture("Texture", sparkTexture);
-        sparkMat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Additive);
-        emitter.setMaterial(sparkMat);
-        emitter.setImagesX(2);
-        emitter.setImagesY(2);
-        emitter.setStartColor(new ColorRGBA(1f, 0.6f, 0.2f, 1f));
-        emitter.setEndColor(new ColorRGBA(1f, 0.1f, 0.1f, 0.2f));
-        emitter.setStartSize(7f);
-        emitter.setEndSize(5f);
-        emitter.setGravity(0, 0, 0);
-        emitter.setParticlesPerSec(0);
-        emitter.setLowLife(0.2f);
-        emitter.setHighLife(0.5f);
-        emitter.getParticleInfluencer().setInitialVelocity(new Vector3f(0, 0, 0));
-        emitter.getParticleInfluencer().setVelocityVariation(15f);
-        emitter.setLocalTranslation(0, 0, 3.5f);
-        return emitter;
-    }
-
-    private Texture2D createFallbackSparkTexture() {
-        int size = 32;
-        ByteBuffer buffer = BufferUtils.createByteBuffer(size * size * 4);
-        float center = (size - 1) / 2f;
-        float radius = center;
-        for (int y = 0; y < size; y++) {
-            for (int x = 0; x < size; x++) {
-                float dx = x - center;
-                float dy = y - center;
-                float distance = (float) Math.sqrt(dx * dx + dy * dy);
-                float alpha = Math.max(0f, 1f - (distance / radius));
-                float intensity = 0.6f + 0.4f * alpha;
-                buffer.put((byte) (255 * intensity));
-                buffer.put((byte) (128 * intensity));
-                buffer.put((byte) (64 * intensity));
-                buffer.put((byte) (255 * alpha));
-            }
-        }
-        buffer.flip();
-        Image image = new Image(Image.Format.RGBA8, size, size, buffer);
-        Texture2D texture = new Texture2D(image);
-        texture.setMagFilter(Texture.MagFilter.Bilinear);
-        texture.setMinFilter(Texture.MinFilter.BilinearNoMipMaps);
-        return texture;
-    }
 
     public void updateDrawingPathVisuals(Geometry drawingPathGeom, List<Vector3f> path) {
         Mesh mesh = drawingPathGeom.getMesh();
