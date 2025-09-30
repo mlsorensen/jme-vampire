@@ -64,7 +64,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
     private Sound sound;
     private float pulseTimer = 0;
 
-    private final String[] MAPPINGS = new String[]{"left", "right", "up", "down", "return"};
+    private final String[] MAPPINGS = new String[]{"left", "right", "up", "down", "return", "draw"};
 
     private Spatial player;
     private boolean gameOver = false;
@@ -214,6 +214,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         inputManager.addMapping("up", new KeyTrigger(KeyInput.KEY_W));
         inputManager.addMapping("down", new KeyTrigger(KeyInput.KEY_S));
         inputManager.addMapping("return", new KeyTrigger(KeyInput.KEY_RETURN));
+        inputManager.addMapping("draw", new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addListener(this, MAPPINGS);
     }
 
@@ -310,6 +311,11 @@ public class LevelAppState extends BaseAppState implements ActionListener {
                     case "down": control.down = isPressed; break;
                     case "left": control.left = isPressed; break;
                     case "right": control.right = isPressed; break;
+                    case "draw":
+                        if (!isPressed) { // On key release
+                            control.toggleDrawing();
+                        }
+                        break;
                 }
             }
         }

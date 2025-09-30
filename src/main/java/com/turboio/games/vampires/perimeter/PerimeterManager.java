@@ -3,6 +3,7 @@ package com.turboio.games.vampires.perimeter;
 import com.jme3.math.Vector3f;
 import com.turboio.games.vampires.controls.PlayerControl;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.operation.distance.DistanceOp;
 import org.locationtech.jts.operation.overlay.snap.GeometrySnapper;
 import org.locationtech.jts.operation.polygonize.Polygonizer;
 import org.locationtech.jts.operation.union.UnaryUnionOp;
@@ -62,15 +63,17 @@ public class PerimeterManager {
                 // More than one polygon, choose the one containing the enemy
                 int i = 0;
                 for (Polygon p : newPolygons) {
-                    System.out.println("  Polygon " + i + ": area=" + p.getArea() + ", containsEnemy=" + p.contains(enemyPoint));
-                    if (p.contains(enemyPoint)) {
+                    double distanceToEnemy = p.getBoundary().distance(enemyPoint);
+                    boolean containsEnemy = p.contains(enemyPoint) && distanceToEnemy >= 10.0;
+                    System.out.println("  Polygon " + i + ": area=" + p.getArea() + ", containsEnemy=" + containsEnemy + " (dist: " + distanceToEnemy + ")");
+                    if (containsEnemy) {
                         newPerimeterPolygon = p;
                         // Don't break, let's log all polygons
                     }
                     i++;
                 }
                 if (newPerimeterPolygon == null) {
-                    System.err.println("WARN: Multiple polygons found, but none contained the enemy point.");
+                    System.err.println("WARN: Multiple polygons found, but none contained the enemy point (with 10px buffer).");
                 }
 
             } else if (!newPolygons.isEmpty()) {
@@ -108,6 +111,14 @@ public class PerimeterManager {
             return new Vector3f((float) intersectionCoord.x, (float) intersectionCoord.y, 0);
         }
         return null;
+    }
+
+    public Vector3f getClosestPointOnPerimeter(Vector3f point, Perimeter perimeter) {
+        Geometry perimeterBoundary = createJTSPolygon(perimeter.getVertices()).getBoundary();
+        Point jtsPoint = geometryFactory.createPoint(new Coordinate(point.x, point.y));
+        Coordinate[] closestPoints = DistanceOp.nearestPoints(perimeterBoundary, jtsPoint);
+        Coordinate onPerimeter = closestPoints[0];
+        return new Vector3f((float) onPerimeter.x, (float) onPerimeter.y, 0);
     }
 
     private Polygon createJTSPolygon(List<Vector3f> vertices) {

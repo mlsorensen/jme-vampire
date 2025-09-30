@@ -52,10 +52,8 @@ public class PlayerControl extends AbstractControl {
         }
 
         Vector3f desiredDirection = getDesiredDirection();
-        
-        // Update animated sprite direction if available
         updateAnimatedSprite(desiredDirection);
-        
+
         if (desiredDirection.lengthSquared() == 0) {
             return; // No input
         }
@@ -68,39 +66,31 @@ public class PlayerControl extends AbstractControl {
         Vector3f currentPos = spatial.getLocalTranslation();
         Vector3f nextPos = currentPos.add(desiredDirection.mult(speed * tpf));
 
-        // Check if next position is within the perimeter
-        if (perimeter.contains(nextPos)) {
-            // Check if we should allow this move
-            boolean wasOnBoundary = perimeterManager.isOnBoundary(currentPos, perimeter);
-            boolean willBeOnBoundary = perimeterManager.isOnBoundary(nextPos, perimeter);
-            
-            if (!isDrawing) {
-                // If not drawing, only allow movement along the boundary
-                if (!wasOnBoundary && !willBeOnBoundary) {
-                    // Both positions are in interior - don't allow free movement in interior
-                    System.out.println("Blocking interior movement - must stay on boundary or start cut");
-                    return;
-                } else if (wasOnBoundary && !willBeOnBoundary) {
-                    // Stepping off boundary - start drawing
-                    System.out.println("Starting cut - stepped off boundary");
-                    isDrawing = true;
-                    playerPath.clear();
-                    // Add starting point on boundary
-                    playerPath.add(new Vector3f(currentPos.x, currentPos.y, 0));
-                }
-            }
-            
-            // Valid move - update position
-            spatial.setLocalTranslation(nextPos);
-            
-            // When drawing, we only track start and end points
-            // The path will be a simple straight line from start to collision point
-        } else {
-            // Hit boundary - check if we've created a valid cut
-            if (isDrawing) {
+        if (isDrawing) {
+            // When drawing, check for collision with perimeter
+            if (!perimeter.contains(nextPos)) {
                 checkForPerimeterCollision(currentPos, nextPos);
+            } else {
+                spatial.setLocalTranslation(nextPos);
             }
-            // If not drawing, just block the move (stay on perimeter)
+        } else {
+            // When not drawing, snap to the perimeter
+            Vector3f snappedPos = perimeterManager.getClosestPointOnPerimeter(nextPos, perimeter);
+            spatial.setLocalTranslation(snappedPos.add(0, 0, SPATIAL_Z_OFFSET));
+        }
+    }
+
+    public void toggleDrawing() {
+        isDrawing = !isDrawing;
+        if (isDrawing) {
+            // Started drawing
+            playerPath.clear();
+            playerPath.add(new Vector3f(spatial.getLocalTranslation().x, spatial.getLocalTranslation().y, 0));
+        } else {
+            // Stopped drawing - snap back to perimeter
+            Vector3f snappedPos = perimeterManager.getClosestPointOnPerimeter(spatial.getLocalTranslation(), perimeter);
+            spatial.setLocalTranslation(snappedPos.add(0, 0, SPATIAL_Z_OFFSET));
+            playerPath.clear();
         }
     }
 
@@ -220,4 +210,3 @@ public class PlayerControl extends AbstractControl {
     }
 
 }
-
