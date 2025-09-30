@@ -24,6 +24,7 @@ public class PlayerControl extends AbstractControl {
     }
 
     private static final float SPATIAL_Z_OFFSET = 3f;
+    private static final float SUB_STEP_DISTANCE = 5f; // For anti-tunneling
     private static final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(PrecisionModel.FLOATING_SINGLE));
 
     // Movement
@@ -70,20 +71,43 @@ public class PlayerControl extends AbstractControl {
         }
         lastDirection.set(desiredDirection);
 
-        Vector3f currentPos = spatial.getLocalTranslation();
-        Vector3f nextPos = currentPos.add(desiredDirection.mult(speed * tpf));
-
         if (isCurrentlyDrawing) {
-            // When drawing, check for collision with perimeter
+            // When drawing, move freely and check for collision
+            Vector3f currentPos = spatial.getLocalTranslation();
+            Vector3f nextPos = currentPos.add(desiredDirection.mult(speed * tpf));
             if (!perimeter.contains(nextPos)) {
                 checkForPerimeterCollision(currentPos, nextPos);
             } else {
                 spatial.setLocalTranslation(nextPos);
             }
         } else {
-            // When not drawing, snap to the perimeter
-            Vector3f snappedPos = perimeterManager.getClosestPointOnPerimeter(nextPos, perimeter);
-            spatial.setLocalTranslation(snappedPos.add(0, 0, SPATIAL_Z_OFFSET));
+            // When not drawing, use sub-steps to prevent tunneling over gaps
+            Vector3f totalMovement = desiredDirection.mult(speed * tpf);
+            float totalDistance = totalMovement.length();
+
+            if (totalDistance <= 0) {
+                return;
+            }
+
+            Vector3f moveDirection = totalMovement.normalize();
+
+            // Start from the player's current 2D position
+            Vector3f currentSubStepPos = spatial.getLocalTranslation().clone();
+            currentSubStepPos.z = 0;
+
+            float distanceMoved = 0;
+            while (distanceMoved < totalDistance) {
+                float step = Math.min(totalDistance - distanceMoved, SUB_STEP_DISTANCE);
+                Vector3f nextSubStepAttempt = currentSubStepPos.add(moveDirection.mult(step));
+
+                // Snap the sub-step position to the perimeter
+                currentSubStepPos = perimeterManager.getClosestPointOnPerimeter(nextSubStepAttempt, perimeter);
+
+                distanceMoved += step;
+            }
+
+            // Set the final position after all sub-steps
+            spatial.setLocalTranslation(currentSubStepPos.add(0, 0, SPATIAL_Z_OFFSET));
         }
     }
 
