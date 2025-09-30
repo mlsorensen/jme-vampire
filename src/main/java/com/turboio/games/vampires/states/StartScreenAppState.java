@@ -10,13 +10,17 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.scene.Node;
 import com.jme3.ui.Picture;
+import com.turboio.games.vampires.audio.Sound;
 
 public class StartScreenAppState extends BaseAppState implements ActionListener {
 
     private static final String START_GAME = "StartGame";
+    private static final String START_MUSIC = "Audio/vampires.wav";
     private Node guiNode;
     private BitmapText startText;
     private Picture background;
+    private Sound sound;
+
 
     @Override
     protected void initialize(Application app) {
@@ -38,6 +42,9 @@ public class StartScreenAppState extends BaseAppState implements ActionListener 
                 0
         );
         guiNode.attachChild(startText);
+
+        sound = new Sound(app.getAssetManager());
+        sound.playMusic(START_MUSIC);
 
         InputManager inputManager = app.getInputManager();
         inputManager.addMapping(START_GAME, new KeyTrigger(KeyInput.KEY_SPACE));
@@ -78,6 +85,9 @@ public class StartScreenAppState extends BaseAppState implements ActionListener 
         }
         if (background != null) {
             background.setCullHint(Node.CullHint.Always);
+        }
+        if (sound != null) {
+            sound.stopMusic();
         }
     }
 
