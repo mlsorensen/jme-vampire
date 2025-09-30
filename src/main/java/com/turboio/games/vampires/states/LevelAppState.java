@@ -190,7 +190,6 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         scoreText.setLocalTranslation(10, app.getCamera().getHeight() - 10, 5);
         percentageText = new BitmapText(guiFont);
         percentageText.setSize(72);
-        percentageText.setLocalTranslation(app.getCamera().getWidth() - 450, app.getCamera().getHeight() - 10, 5);
     }
 
     @Override
@@ -301,6 +300,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         double percentage = (1 - (currentPerimeterArea / originalPerimeterArea)) * 100;
         scoreText.setText("Score: " + (int) score);
         percentageText.setText(String.format("%.2f%%", percentage));
+        percentageText.setLocalTranslation(app.getCamera().getWidth() - percentageText.getLineWidth() - 10, app.getCamera().getHeight() - 10, 5);
     }
 
     private void handleDrawingSounds(PlayerControl control) {

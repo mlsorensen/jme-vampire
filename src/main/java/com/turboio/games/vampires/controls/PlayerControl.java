@@ -29,7 +29,7 @@ public class PlayerControl extends AbstractControl {
 
     // Movement
     public boolean up, down, left, right;
-    private final float speed = 400f;
+    private final float speed = 280f;
     private Vector3f lastDirection;
 
     // Game Data

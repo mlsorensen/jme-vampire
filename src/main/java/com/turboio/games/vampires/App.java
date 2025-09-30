@@ -14,9 +14,9 @@ public class App extends SimpleApplication {
     public static void main(String[] args) {
         App app = new App();
         AppSettings settings = new AppSettings(true);
-        settings.setWidth(1600);
-        settings.setHeight(1200);
-        settings.setTitle("Vampires");
+        settings.setWidth(1200);
+        settings.setHeight(900);
+        settings.setTitle("Elegy of Shadows");
         settings.setAudioRenderer(AppSettings.LWJGL_OPENAL);
         app.setSettings(settings);
         app.setShowSettings(false);
