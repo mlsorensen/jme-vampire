@@ -45,10 +45,10 @@ public class SparkEffect {
         this.parentNode = parentNode;
         this.assetManager = assetManager;
         
-        // Create a reusable material for all sparks
+        // Create a reusable material for all sparks - red lightsaber color
         sparkMaterial = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        sparkMaterial.setColor("Color", new ColorRGBA(1f, 0.6f, 0.2f, 1f));
-        sparkMaterial.setColor("GlowColor", new ColorRGBA(1f, 0.4f, 0.1f, 1f));
+        sparkMaterial.setColor("Color", new ColorRGBA(1f, 0.2f, 0.1f, 1f));
+        sparkMaterial.setColor("GlowColor", new ColorRGBA(1f, 0.15f, 0.05f, 1f));
         sparkMaterial.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Additive);
         sparkMaterial.getAdditionalRenderState().setDepthTest(false);
         sparkMaterial.getAdditionalRenderState().setDepthWrite(false);
@@ -115,12 +115,12 @@ public class SparkEffect {
                 spark.position.x += spark.velocity.x * tpf;
                 spark.position.y += spark.velocity.y * tpf;
                 
-                // Update color with fade
+                // Update color with fade - keep red lightsaber color
                 Material mat = spark.geometry.getMaterial();
-                ColorRGBA color = new ColorRGBA(1f, 0.6f - progress * 0.4f, 0.2f - progress * 0.1f, alpha);
+                ColorRGBA color = new ColorRGBA(1f, 0.2f - progress * 0.1f, 0.1f - progress * 0.05f, alpha);
                 mat.setColor("Color", color);
                 
-                ColorRGBA glowColor = new ColorRGBA(1f, 0.4f, 0.1f, alpha);
+                ColorRGBA glowColor = new ColorRGBA(1f, 0.15f - progress * 0.05f, 0.05f, alpha);
                 mat.setColor("GlowColor", glowColor);
                 
                 // Update size and position

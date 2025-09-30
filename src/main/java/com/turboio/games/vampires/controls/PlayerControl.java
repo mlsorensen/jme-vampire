@@ -52,6 +52,10 @@ public class PlayerControl extends AbstractControl {
         }
 
         Vector3f desiredDirection = getDesiredDirection();
+        
+        // Update animated sprite direction if available
+        updateAnimatedSprite(desiredDirection);
+        
         if (desiredDirection.lengthSquared() == 0) {
             return; // No input
         }
@@ -139,6 +143,35 @@ public class PlayerControl extends AbstractControl {
         if (left) desiredDirection.x = -1;
         if (right) desiredDirection.x = 1;
         return desiredDirection.normalizeLocal();
+    }
+    
+    private void updateAnimatedSprite(Vector3f direction) {
+        AnimatedSpriteControl animControl = spatial.getControl(AnimatedSpriteControl.class);
+        if (animControl == null) {
+            return; // Not an animated sprite
+        }
+        
+        if (direction.lengthSquared() == 0) {
+            animControl.setDirection(AnimatedSpriteControl.Direction.IDLE);
+            return;
+        }
+        
+        // Determine primary direction based on movement vector
+        if (Math.abs(direction.y) > Math.abs(direction.x)) {
+            // Vertical movement dominates
+            if (direction.y > 0) {
+                animControl.setDirection(AnimatedSpriteControl.Direction.UP);
+            } else {
+                animControl.setDirection(AnimatedSpriteControl.Direction.DOWN);
+            }
+        } else {
+            // Horizontal movement dominates
+            if (direction.x > 0) {
+                animControl.setDirection(AnimatedSpriteControl.Direction.RIGHT);
+            } else {
+                animControl.setDirection(AnimatedSpriteControl.Direction.LEFT);
+            }
+        }
     }
 
 

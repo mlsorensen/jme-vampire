@@ -6,6 +6,7 @@ public class LevelConfig {
     private String backgroundImage;
     private String foregroundImage;
     private String music;
+    private String playerSprite;
     private List<Vector2> perimeterVertices;
     private List<EnemyConfig> enemies;
 
@@ -31,6 +32,14 @@ public class LevelConfig {
 
     public void setMusic(String music) {
         this.music = music;
+    }
+
+    public String getPlayerSprite() {
+        return playerSprite;
+    }
+
+    public void setPlayerSprite(String playerSprite) {
+        this.playerSprite = playerSprite;
     }
 
     public List<Vector2> getPerimeterVertices() {

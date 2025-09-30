@@ -21,6 +21,7 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture2D;
 import com.jme3.ui.Picture;
 import com.turboio.games.vampires.audio.Sound;
+import com.turboio.games.vampires.controls.AnimatedSpriteControl;
 import com.turboio.games.vampires.controls.PlayerControl;
 import com.turboio.games.vampires.controls.WanderingEnemyControl;
 import com.turboio.games.vampires.level.EnemyConfig;
@@ -134,7 +135,15 @@ public class LevelAppState extends BaseAppState implements ActionListener {
     }
 
     private void setupPlayer() {
-        player = createSprite("player");
+        // Default to victor, can override with "player" or other sprite in level config
+        String playerName = config.getPlayerSprite() != null ? config.getPlayerSprite() : "victor";
+        
+        if (playerName.equals("victor")) {
+            player = createAnimatedSprite("Textures/sprites/victor");
+        } else {
+            player = createSprite(playerName);
+        }
+        
         player.setUserData("alive", true);
         player.setLocalTranslation(perimeters.get(0).getVertices().get(0).add(0, 0, 4f));
         player.setQueueBucket(RenderQueue.Bucket.Gui);
@@ -187,6 +196,8 @@ public class LevelAppState extends BaseAppState implements ActionListener {
     @Override
     protected void onEnable() {
         app.getGuiNode().attachChild(background);
+        System.out.println("Attaching player to guiNode: " + player.getName() + " at " + player.getLocalTranslation());
+        System.out.println("Player has " + ((Node)player).getChildren().size() + " children");
         app.getGuiNode().attachChild(player);
         for (Spatial enemy : enemies) {
             app.getGuiNode().attachChild(enemy);
@@ -324,8 +335,22 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         node.attachChild(pic);
         return node;
     }
+    
+    private Spatial createAnimatedSprite(String basePath) {
+        Node node = new Node("AnimatedPlayer");
+        AnimatedSpriteControl animControl = new AnimatedSpriteControl(app.getAssetManager(), basePath);
+        node.attachChild(animControl.getGeometry());
+        node.addControl(animControl);
+        node.setUserData("radius", 32f); // Half of 64px sprite
+        return node;
+    }
 
     private void checkCollisions(PlayerControl control) {
+        // Victor is only vulnerable when drawing a path
+        if (!control.isDrawing()) {
+            return;
+        }
+        
         Vector3f playerPos = player.getLocalTranslation();
         float playerRadius = ((Number) player.getUserData("radius")).floatValue();
 
@@ -333,18 +358,18 @@ public class LevelAppState extends BaseAppState implements ActionListener {
             Vector3f enemyPos = enemy.getLocalTranslation();
             float enemyRadius = ((Number) enemy.getUserData("radius")).floatValue();
 
+            // Check direct collision with enemy
             if (playerPos.distance(enemyPos) <= playerRadius + enemyRadius) {
                 handlePlayerDeath();
                 return;
             }
 
-            if (control.isDrawing()) {
-                List<Vector3f> path = control.getVisualDrawingPath();
-                if (path != null && !path.isEmpty()) {
-                    if (isCircleIntersectingPolyline(enemyPos, enemyRadius, path)) {
-                        handlePlayerDeath();
-                        return;
-                    }
+            // Check if drawing path intersects enemy
+            List<Vector3f> path = control.getVisualDrawingPath();
+            if (path != null && !path.isEmpty()) {
+                if (isCircleIntersectingPolyline(enemyPos, enemyRadius, path)) {
+                    handlePlayerDeath();
+                    return;
                 }
             }
         }
