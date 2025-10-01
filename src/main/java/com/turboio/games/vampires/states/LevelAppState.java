@@ -309,7 +309,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         }
 
         double percentage = (1 - (currentPerimeterArea / originalPerimeterArea)) * 100;
-        scoreText.setText("Score: " + (int) score);
+        scoreText.setText(String.format("Score: %.0f",score));
         percentageText.setText(String.format("%.2f%%", percentage));
         percentageText.setLocalTranslation(app.getCamera().getWidth() - percentageText.getLineWidth() - 10, app.getCamera().getHeight() - 10, 5);
     }
