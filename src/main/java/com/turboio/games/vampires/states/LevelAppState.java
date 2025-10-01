@@ -276,7 +276,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
             double lastPerimeterArea = currentPerimeterArea;
             currentPerimeterArea = newPerimeter.getArea();
             double capturedArea = lastPerimeterArea - currentPerimeterArea;
-            score += capturedArea * (capturedArea / lastPerimeterArea);
+            score += 5 * capturedArea * (capturedArea / originalPerimeterArea);
 
             Geometry newPerimeterLine = perimeterRenderer.createPerimeterLine(newPerimeter.getVertices());
             perimeterGeoms.attachChild(newPerimeterLine);
