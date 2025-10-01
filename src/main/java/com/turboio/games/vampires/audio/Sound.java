@@ -33,22 +33,22 @@ public class Sound {
         }
     }
 
-    public void playSound(String path) {
+    public void playSound(String path, float volume) {
         AudioNode sound = new AudioNode(assetManager, path, AudioData.DataType.Buffer);
         sound.setPositional(false);
         sound.setLooping(false);
-        sound.setVolume(1);
+        sound.setVolume(volume);
         sound.playInstance();
     }
 
-    public void startLoop(String path, String id) {
+    public void startLoop(String path, String id, float volume) {
         if (loopingSounds.containsKey(id)) {
             return; // Already playing
         }
         AudioNode loop = new AudioNode(assetManager, path, AudioData.DataType.Stream);
         loop.setPositional(false);
         loop.setLooping(true);
-        loop.setVolume(1);
+        loop.setVolume(volume);
         loopingSounds.put(id, loop);
         loop.play();
     }
