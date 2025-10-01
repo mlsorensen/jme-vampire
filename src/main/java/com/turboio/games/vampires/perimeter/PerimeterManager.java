@@ -64,7 +64,7 @@ public class PerimeterManager {
                 int i = 0;
                 for (Polygon p : newPolygons) {
                     double distanceToEnemy = p.getBoundary().distance(enemyPoint);
-                    boolean containsEnemy = p.contains(enemyPoint) && distanceToEnemy >= 10.0;
+                    boolean containsEnemy = p.contains(enemyPoint);
                     System.out.println("  Polygon " + i + ": area=" + p.getArea() + ", containsEnemy=" + containsEnemy + " (dist: " + distanceToEnemy + ")");
                     if (containsEnemy) {
                         newPerimeterPolygon = p;
@@ -73,7 +73,7 @@ public class PerimeterManager {
                     i++;
                 }
                 if (newPerimeterPolygon == null) {
-                    System.err.println("WARN: Multiple polygons found, but none contained the enemy point (with 10px buffer).");
+                    System.err.println("WARN: Multiple polygons found, but none contained the enemy point");
                 }
 
             } else if (!newPolygons.isEmpty()) {

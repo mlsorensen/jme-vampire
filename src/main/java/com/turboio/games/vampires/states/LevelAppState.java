@@ -22,6 +22,7 @@ import com.jme3.texture.Texture2D;
 import com.jme3.ui.Picture;
 import com.turboio.games.vampires.audio.Sound;
 import com.turboio.games.vampires.controls.AnimatedSpriteControl;
+import com.turboio.games.vampires.controls.EnemyMovementControl;
 import com.turboio.games.vampires.controls.PlayerControl;
 import com.turboio.games.vampires.controls.WanderingEnemyControl;
 import com.turboio.games.vampires.level.EnemyConfig;
@@ -31,6 +32,7 @@ import com.turboio.games.vampires.perimeter.PerimeterManager;
 import com.turboio.games.vampires.perimeter.PerimeterRenderer;
 import com.turboio.games.vampires.perimeter.SparkEffect;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,7 +49,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
     private SimpleApplication app;
     private Picture background;
     private final List<Spatial> enemies = new ArrayList<>();
-    private final List<WanderingEnemyControl> enemyControls = new ArrayList<>();
+    private final List<EnemyMovementControl> enemyControls = new ArrayList<>();
     private Node perimeterGeoms;
     private Geometry dayField;
     private Geometry drawingPathGeom;
@@ -161,7 +163,7 @@ public class LevelAppState extends BaseAppState implements ActionListener {
                 enemySpatial.setLocalTranslation(enemyConfig.getSpawnX(), enemyConfig.getSpawnY(), 4f);
                 enemySpatial.setQueueBucket(RenderQueue.Bucket.Gui);
 
-                WanderingEnemyControl control = createMovementControl(enemyConfig);
+                EnemyMovementControl control = createMovementControl(enemyConfig);
                 enemySpatial.addControl(control);
 
                 enemies.add(enemySpatial);
@@ -170,9 +172,18 @@ public class LevelAppState extends BaseAppState implements ActionListener {
         }
     }
 
-    private WanderingEnemyControl createMovementControl(EnemyConfig config) {
+    private EnemyMovementControl createMovementControl(EnemyConfig config) {
         float speed = config.getSpeed() > 0 ? config.getSpeed() : 200f;
-        return new WanderingEnemyControl(perimeters.get(0), speed);
+        String movementClass = config.getMovementClass();
+        if (movementClass == null) {
+            return new WanderingEnemyControl(perimeters.get(0), speed);
+        }
+        try {
+            Class<?> clazz = Class.forName(movementClass);
+            return (EnemyMovementControl) clazz.getConstructor(Perimeter.class, float.class).newInstance(perimeters.get(0), speed);
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            throw new RuntimeException("Could not create movement control: " + movementClass, e);
+        }
     }
 
     private void setupUI() {

@@ -11,10 +11,10 @@
   "enemies": [
     {
       "sprite": "human",
-      "radius": 32.0,
+      "radius": 24.0,
       "spawnX": 300.0,
       "spawnY": 300.0,
-      "movementClass": "com.turboio.games.vampires.controls.WanderingEnemyControl",
+      "movementClass": "com.turboio.games.vampires.controls.BouncingEnemyControl",
       "speed": 200.0
     }
   ]
