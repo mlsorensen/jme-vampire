@@ -5,6 +5,7 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
+import com.jme3.font.Rectangle;
 import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
@@ -95,6 +96,8 @@ public class SlideshowAppState extends BaseAppState implements ActionListener {
         text = new BitmapText(font, false);
         text.setSize(font.getCharSet().getRenderedSize() * 1.25f);
         text.setQueueBucket(com.jme3.renderer.queue.RenderQueue.Bucket.Gui);
+        text.setBox(new Rectangle(0, 0, app.getCamera().getWidth(), text.getLineHeight() * 2.5f));
+        text.setAlignment(BitmapFont.Align.Center);
         text.setLocalTranslation(0, 0, 0.2f);
         root.attachChild(text);
     }
@@ -187,16 +190,33 @@ public class SlideshowAppState extends BaseAppState implements ActionListener {
             bgMat.setColor("Color", color);
         }
 
-        text.setText(slide.getText() != null ? slide.getText() : "");
+        String slideText = slide.getText() != null ? slide.getText() : "";
+        text.setText(slideText);
+
+        if (text.getLineWidth() > app.getCamera().getWidth()) {
+            int middle = slideText.length() / 2;
+            int splitPoint = slideText.lastIndexOf(' ', middle);
+            if (splitPoint == -1) {
+                splitPoint = slideText.indexOf(' ', middle);
+            }
+
+            if (splitPoint != -1) {
+                String wrappedText = slideText.substring(0, splitPoint).trim() + "\n" + slideText.substring(splitPoint).trim();
+                text.setText(wrappedText);
+            }
+        }
+
         centerText();
     }
 
     private void centerText() {
-        float width = text.getLineWidth();
-        float height = text.getLineHeight();
-        float x = (app.getCamera().getWidth() - width) / 2f;
-        float y = (app.getCamera().getHeight() * 0.33f) + height;
-        text.setLocalTranslation(x, y, 0.2f);
+        float y;
+        if (text.getText().contains("\n")) {
+            y = (app.getCamera().getHeight() * 0.33f);
+        } else {
+            y = (app.getCamera().getHeight() * 0.33f) + text.getLineHeight();
+        }
+        text.setLocalTranslation(0, y, 0.2f);
     }
 
     private ColorRGBA parseColor(String hex) {
