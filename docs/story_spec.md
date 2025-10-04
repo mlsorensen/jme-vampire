@@ -117,7 +117,7 @@ Each level file uses this schema:
 {
   "backgroundImage": "Textures/foo/level1_background.png",
   "foregroundImage": "Textures/foo/level1_foreground.png",
-  "music": "Audio/vampires.wav",
+  "music": "Audio/vampires.ogg",
   "perimeterVertices": [ { "x": 64.0, "y": 64.0 }, ... ],
   "enemies": [
     {

@@ -1,0 +1,100 @@
+{
+  "id": "kwotton_diner_wars",
+  "start": "intro",
+  "nodes": {
+    "intro": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "Morning sun over Whisker City. The smell of coffee, pancakes... and trouble.", "duration": 3.5, "backgroundColor": "#332222" },
+        { "text": "At Kitten’s Diner, Cherry the kwotton waitress ties her apron tight.", "duration": 3.5, "backgroundColor": "#332222" },
+        { "text": "She’s got charm, claws, and zero tolerance for rude customers.", "duration": 3.0, "backgroundColor": "#332222" },
+        { "text": "The breakfast rush begins.", "duration": 3.0, "backgroundColor": "#332222" }
+      ],
+      "next": "level1"
+    },
+
+    "level1": {
+      "type": "level",
+      "level": "level1.json",
+      "onWin": "after_level1",
+      "onLose": "retry_level1"
+    },
+
+    "retry_level1": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "The Coffee Critic sneered, ‘Too bitter, like your attitude.’", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Cherry gritted her teeth. One more refill — one more shot at victory.", "duration": 3.0, "backgroundColor": "#000000" }
+      ],
+      "next": "level1"
+    },
+
+    "after_level1": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "With a single flip of her tail, Cherry silenced the Coffee Critic.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "‘Extra cream, less attitude,’ she purred.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "But lunch was coming — and so was The Noodle Bandit.", "duration": 3.5, "backgroundColor": "#000000" }
+      ],
+      "next": "level2"
+    },
+
+    "level2": {
+      "type": "level",
+      "level": "level2.json",
+      "onWin": "after_level2",
+      "onLose": "retry_level2"
+    },
+
+    "retry_level2": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "The Noodle Bandit slurped the entire pot before Cherry could react.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Cherry narrowed her eyes. Nobody out-slurps a kwotton twice.", "duration": 3.0, "backgroundColor": "#000000" }
+      ],
+      "next": "level2"
+    },
+
+    "after_level2": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "The Noodle Bandit was left tangled in his own spaghetti.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Cherry flicked a stray noodle from her sleeve and sighed.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Dinner shift loomed... and with it, her final challenge — The Food Critic Queen.", "duration": 3.5, "backgroundColor": "#000000" }
+      ],
+      "next": "level3"
+    },
+
+    "level3": {
+      "type": "level",
+      "level": "level3.json",
+      "onWin": "final_slides",
+      "onLose": "retry_level3"
+    },
+
+    "retry_level3": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "The Food Critic Queen dabbed her lips. ‘Mediocre. Like your service.’", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Cherry’s ears twitched. She was not losing the dinner crowd.", "duration": 3.0, "backgroundColor": "#000000" }
+      ],
+      "next": "level3"
+    },
+
+    "final_slides": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "The Queen’s plate was empty. Silence filled the diner.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Then — a slow clap. ‘Purr-fection,’ she whispered.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Cherry smiled, tail swaying. Another shift survived.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Outside, the neon sign hummed softly: Kitten’s Diner — Always Open.", "duration": 3.5, "backgroundColor": "#000000" }
+      ],
+      "next": "ending"
+    },
+
+    "ending": {
+      "type": "ending",
+      "endingType": "gameOver"
+    }
+  }
+}

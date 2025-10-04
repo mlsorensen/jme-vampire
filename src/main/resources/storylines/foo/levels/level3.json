@@ -1,7 +1,7 @@
 {
   "backgroundImage": "Textures/foo/level1_background.png",
   "foregroundImage": "Textures/foo/level1_foreground.png",
-  "music": "Audio/vampires.wav",
+  "music": "Audio/vampires.ogg",
   "perimeterVertices": [
     { "x": 48.0, "y": 48.0 },
     { "x": 1152.0, "y": 48.0 },

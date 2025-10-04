@@ -1,0 +1,102 @@
+{
+  "id": "danny_beews_secret_society",
+  "start": "intro",
+  "nodes": {
+    "intro": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "Deep within the data vaults of Enky Corporation, strange code began to whisper.", "duration": 3.5, "backgroundColor": "#000014" },
+        { "text": "Marcus was no ordinary engineer — he could *feel* the bugs before they appeared.", "duration": 3.5, "backgroundColor": "#000014" },
+        { "text": "Tonight, he’d uncover the truth behind every crash log.", "duration": 3.5, "backgroundColor": "#000014" },
+        { "text": "The Danny Beews Secret Society was watching.", "duration": 3.5, "backgroundColor": "#000014" }
+      ],
+      "next": "level1"
+    },
+
+    "level1": {
+      "type": "level",
+      "level": "level1.json",
+      "onWin": "after_level1",
+      "onLose": "retry_level1"
+    },
+
+    "retry_level1": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "The NullPointer Phantom struck again — line 342, function unknown.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Marcus sighed. ‘Not today, ghost.’", "duration": 3.0, "backgroundColor": "#000000" }
+      ],
+      "next": "level1"
+    },
+
+    "after_level1": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "The NullPointer Phantom dissolved into static.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Marcus’ monitor flickered — a symbol appeared: three interlocking D’s.", "duration": 3.5, "backgroundColor": "#000000" },
+        { "text": "The Danny Beews were real.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "But before he could read more, another anomaly formed: the Memory Leech.", "duration": 3.5, "backgroundColor": "#000000" }
+      ],
+      "next": "level2"
+    },
+
+    "level2": {
+      "type": "level",
+      "level": "level2.json",
+      "onWin": "after_level2",
+      "onLose": "retry_level2"
+    },
+
+    "retry_level2": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "The Memory Leech drained every variable in sight.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Marcus rebooted, muttering, ‘Garbage collect this.’", "duration": 3.0, "backgroundColor": "#000000" }
+      ],
+      "next": "level2"
+    },
+
+    "after_level2": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "Marcus refactored the Leech into oblivion.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "As silence returned, a message pinged his terminal:", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "‘Welcome to the Society, Brother Marcus. Your final test awaits.’", "duration": 3.5, "backgroundColor": "#000000" },
+        { "text": "He looked up — the lights dimmed. The Infinite Loop had begun.", "duration": 3.5, "backgroundColor": "#000000" }
+      ],
+      "next": "level3"
+    },
+
+    "level3": {
+      "type": "level",
+      "level": "level3.json",
+      "onWin": "final_slides",
+      "onLose": "retry_level3"
+    },
+
+    "retry_level3": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "The Infinite Loop trapped Marcus in endless builds.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "He clenched his fists. ‘Break condition: me.’", "duration": 3.0, "backgroundColor": "#000000" }
+      ],
+      "next": "level3"
+    },
+
+    "final_slides": {
+      "type": "slideshow",
+      "slides": [
+        { "text": "At last, the loop was broken. The servers hummed in relief.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "The symbol of the Society pulsed once more — then faded.", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Marcus closed his laptop and whispered, ‘Bug fixed.’", "duration": 3.0, "backgroundColor": "#000000" },
+        { "text": "Somewhere in the codebase, the Danny Beews approved.", "duration": 3.5, "backgroundColor": "#000000" }
+      ],
+      "next": "ending"
+    },
+
+    "ending": {
+      "type": "ending",
+      "endingType": "gameOver"
+    }
+  }
+}

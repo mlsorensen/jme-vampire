@@ -15,7 +15,7 @@ import com.turboio.games.vampires.audio.Sound;
 public class StartScreenAppState extends BaseAppState implements ActionListener {
 
     private static final String START_GAME = "StartGame";
-    private static final String START_MUSIC = "Audio/vampires.wav";
+    private static final String START_MUSIC = "Audio/vampires.ogg";
     private Node guiNode;
     private BitmapText startText;
     private Picture background;
@@ -53,7 +53,7 @@ public class StartScreenAppState extends BaseAppState implements ActionListener 
 
     private void startGame() {
         setEnabled(false);
-        getStateManager().attach(new StoryAppState("storylines/foo/story.json"));
+        getStateManager().attach(new StoryAppState("storylines/other-k/story.json"));
         getStateManager().detach(this);
     }
 

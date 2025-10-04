@@ -1,0 +1,21 @@
+{
+  "backgroundImage": "Textures/foo/level1_background.png",
+  "foregroundImage": "Textures/foo/level1_foreground.png",
+  "music": "Audio/vampires.ogg",
+  "perimeterVertices": [
+    { "x": 48.0, "y": 48.0 },
+    { "x": 1152.0, "y": 48.0 },
+    { "x": 1152.0, "y": 800.0 },
+    { "x": 48.0, "y": 800.0 }
+  ],
+  "enemies": [
+    {
+      "sprite": "human",
+      "radius": 24.0,
+      "spawnX": 450.0,
+      "spawnY": 375.0,
+      "movementClass": "com.turboio.games.vampires.controls.BouncingEnemyControl",
+      "speed": 260.0
+    }
+  ]
+}

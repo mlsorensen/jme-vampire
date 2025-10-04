@@ -317,13 +317,13 @@ public class LevelAppState extends BaseAppState implements ActionListener {
     private void handleDrawingSounds(PlayerControl control) {
         switch (control.getDrawingState()) {
             case STARTING_DRAW:
-                sound.playSound("Audio/cut-start.wav", 0.5f);
-                sound.startLoop("Audio/cut-active.wav", "drawing", 0.3f);
+                sound.playSound("Audio/cut-start.ogg", 0.5f);
+                sound.startLoop("Audio/cut-active.ogg", "drawing", 0.3f);
                 control.advanceDrawingState();
                 break;
             case ENDING_DRAW:
                 sound.stopLoop("drawing");
-                sound.playSound("Audio/cut-end.wav", 0.5f);
+                sound.playSound("Audio/cut-end.ogg", 0.5f);
                 control.advanceDrawingState();
                 break;
         }
